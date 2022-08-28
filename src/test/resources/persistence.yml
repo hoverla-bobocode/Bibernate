@@ -1,0 +1,18 @@
+log-level: INFO
+
+persistence-unit:
+  name: h2
+  dataSource:
+    jdbcUrl: jdbc:h2:mem:testdb
+    user: sa
+    password: password
+  dialect: h2
+
+---
+persistence-unit:
+  name: unused-unit
+  dataSource:
+    jdbcUrl: unused-url
+    user: root
+    password: root
+
