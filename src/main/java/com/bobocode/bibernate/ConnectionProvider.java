@@ -1,4 +1,4 @@
-package com.bobocode;
+package com.bobocode.bibernate;
 
 import java.sql.Connection;
 

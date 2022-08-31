@@ -1,4 +1,4 @@
-package com.bobocode;
+package com.bobocode.bibernate;
 
 public interface Transaction {
     void begin();
