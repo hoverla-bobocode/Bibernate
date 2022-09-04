@@ -123,4 +123,9 @@ public class SessionImpl implements Session {
     public Transaction rollbackTransaction() {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public Transaction closeTransaction() {
+        throw new UnsupportedOperationException();
+    }
 }
