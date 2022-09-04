@@ -1,6 +1,6 @@
 package com.bobocode.bibernate.session;
 
-import com.bobocode.bibernate.Dialect;
+import com.bobocode.bibernate.configuration.Dialect;
 import com.bobocode.bibernate.exception.EntityMappingException;
 import com.bobocode.bibernate.session.entity.EntityClass;
 import com.bobocode.bibernate.session.entity.NotDefinedIdField;
@@ -50,7 +50,7 @@ class SessionValidationTest {
     @Test
     @DisplayName("Throws IllegalArgumentException when limit is negative")
     void throwsIllegalArgumentExceptionWhenLimitIsNegative() {
-       assertThatThrownBy(() -> session.findAll(EntityClass.class, -1, 0))
+        assertThatThrownBy(() -> session.findAll(EntityClass.class, -1, 0))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("[limit] argument cannot be negative number");
     }

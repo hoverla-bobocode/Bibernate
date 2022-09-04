@@ -1,4 +1,4 @@
-logLevel: INFO
+
 
 persistenceUnit:
   name: h2
@@ -7,7 +7,7 @@ persistenceUnit:
     user: sa
     password: password
   dialect: h2
-
+logLevel: INFO
 ---
 persistenceUnit:
   name: unused-unit
@@ -16,3 +16,38 @@ persistenceUnit:
     user: root
     password: root
 
+---
+persistenceUnit:
+  name: h2-with-incorrect-dialect
+  dataSource:
+    jdbcUrl: jdbc:h2:mem:testdb
+    user: sa
+    password: password
+  dialect: incorrect-dialect
+
+
+---
+persistenceUnit:
+  name: unsupported-dialect
+  dataSource:
+    jdbcUrl: unsupported-url
+    user: sa
+    password: root
+  dialect: unsupported-dialect
+
+---
+persistenceUnit:
+  name: h2-unprovided-dialect
+  dataSource:
+    jdbcUrl: jdbc:h2:mem:testdb
+    user: sa
+    password: password
+logLevel: INFO
+---
+persistenceUnit:
+  name: h2-integration-test
+  dataSource:
+    jdbcUrl: jdbc:h2:mem:default;INIT=RUNSCRIPT FROM 'src/test/resources/sql/product.sql';DB_CLOSE_DELAY=0
+    user: sa
+    password: password
+  dialect: H2

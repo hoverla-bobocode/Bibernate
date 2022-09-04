@@ -1,0 +1,9 @@
+logLevel: INFO
+
+persistenceUnit:
+  name: h2
+  dataSource:
+    jdbcUrl: jdbc:h2:mem:default;INIT=RUNSCRIPT FROM 'src/test/resources/sql/person.sql'
+    user: sa
+    password: password
+  dialect: h2

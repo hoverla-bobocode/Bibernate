@@ -1,4 +1,4 @@
-package com.bobocode.bibernate;
+package com.bobocode.bibernate.configuration;
 
 import java.util.Set;
 import java.util.stream.Collectors;

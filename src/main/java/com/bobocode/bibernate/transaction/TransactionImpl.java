@@ -6,7 +6,12 @@ import lombok.extern.slf4j.Slf4j;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-import static com.bobocode.bibernate.transaction.TransactionStatus.*;
+import static com.bobocode.bibernate.transaction.TransactionStatus.ACTIVE;
+import static com.bobocode.bibernate.transaction.TransactionStatus.COMMITTED;
+import static com.bobocode.bibernate.transaction.TransactionStatus.FAILED_COMMIT;
+import static com.bobocode.bibernate.transaction.TransactionStatus.FAILED_ROLLBACK;
+import static com.bobocode.bibernate.transaction.TransactionStatus.NOT_ACTIVE;
+import static com.bobocode.bibernate.transaction.TransactionStatus.ROLLED_BACK;
 
 @Slf4j
 public class TransactionImpl implements Transaction {

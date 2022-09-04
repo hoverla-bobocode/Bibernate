@@ -1,6 +1,5 @@
 package com.bobocode.bibernate.session;
 
-import com.bobocode.bibernate.Dialect;
 import com.bobocode.bibernate.EntityPersister;
 import com.bobocode.bibernate.PersistenceContext;
 import com.bobocode.bibernate.Util;
@@ -9,6 +8,7 @@ import com.bobocode.bibernate.action.Action;
 import com.bobocode.bibernate.action.DeleteAction;
 import com.bobocode.bibernate.action.InsertAction;
 import com.bobocode.bibernate.action.UpdateAction;
+import com.bobocode.bibernate.configuration.Dialect;
 import com.bobocode.bibernate.exception.BibernateException;
 import com.bobocode.bibernate.transaction.Transaction;
 import com.bobocode.bibernate.transaction.TransactionImpl;
@@ -24,12 +24,12 @@ import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.Queue;
 
-import static com.bobocode.bibernate.Dialect.SELECT_ALL_BY_PROPERTIES_TEMPLATE;
-import static com.bobocode.bibernate.Dialect.SELECT_ALL_ID_TEMPLATE;
-import static com.bobocode.bibernate.Dialect.SELECT_ALL_TEMPLATE;
-import static com.bobocode.bibernate.Dialect.prepareWhereClause;
 import static com.bobocode.bibernate.Util.getTableName;
 import static com.bobocode.bibernate.Util.mergeEntities;
+import static com.bobocode.bibernate.configuration.Dialect.SELECT_ALL_BY_PROPERTIES_TEMPLATE;
+import static com.bobocode.bibernate.configuration.Dialect.SELECT_ALL_ID_TEMPLATE;
+import static com.bobocode.bibernate.configuration.Dialect.SELECT_ALL_TEMPLATE;
+import static com.bobocode.bibernate.configuration.Dialect.prepareWhereClause;
 
 @Slf4j
 public class SessionImpl implements Session {
@@ -135,7 +135,7 @@ public class SessionImpl implements Session {
         actionQueue.offer(new InsertAction(entityPersister, persistenceContext, entity));
     }
 
-    private  <T> void update(T entity, Map<String, Object> updatedColumns) {
+    private <T> void update(T entity, Map<String, Object> updatedColumns) {
         Objects.requireNonNull(entity);
         Objects.requireNonNull(updatedColumns);
         Validator.validateEntity(entity.getClass());
@@ -210,6 +210,7 @@ public class SessionImpl implements Session {
     public void commit() {
         checkIsOpen();
         checkTransactionIsInitialized();
+        flush();
         transaction.commit();
     }
 
