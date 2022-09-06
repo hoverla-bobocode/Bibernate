@@ -125,7 +125,7 @@ public class SessionImpl implements Session {
     }
 
     @Override
-    public Transaction closeTransaction() {
+    public void close() {
         throw new UnsupportedOperationException();
     }
 }

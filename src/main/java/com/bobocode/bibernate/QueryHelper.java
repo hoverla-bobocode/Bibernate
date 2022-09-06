@@ -4,27 +4,33 @@ import com.bobocode.bibernate.exception.QueryHelperException;
 import com.bobocode.bibernate.session.Session;
 import com.bobocode.bibernate.session.SessionFactory;
 
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class QueryHelper {
-    private SessionFactory sessionFactory;
 
-    public QueryHelper(SessionFactory sessionFactoryFactory) {
-        this.sessionFactory = sessionFactoryFactory;
+    private QueryHelper() {
     }
 
-    public <T> T readWithinTx(Function<Session, T> entityManagerConsumer) {
+    public static void runWithinTx(SessionFactory sessionFactory, Consumer<Session> action){
+        runWithinTxReturning(sessionFactory, session -> {
+            action.accept(session);
+            return null;
+        });
+    }
+
+    public static <T> T runWithinTxReturning(SessionFactory sessionFactory, Function<Session, T> sessionConsumer) {
         Session session = sessionFactory.createSession();
         session.beginTransaction();
         try {
-            T result = entityManagerConsumer.apply(session);
+            T result = sessionConsumer.apply(session);
             session.commitTransaction();
             return result;
         } catch (Exception e) {
             session.rollbackTransaction();
             throw new QueryHelperException("Transaction is rolled back", e);
         } finally {
-            session.closeTransaction();
+            session.close();
         }
     }
 }

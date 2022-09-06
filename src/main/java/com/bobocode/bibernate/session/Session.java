@@ -65,5 +65,5 @@ public interface Session {
     Transaction beginTransaction();
     Transaction commitTransaction();
     Transaction rollbackTransaction();
-    Transaction closeTransaction();
+    void close();
 }
