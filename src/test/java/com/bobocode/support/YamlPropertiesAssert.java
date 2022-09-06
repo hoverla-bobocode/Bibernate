@@ -1,4 +1,4 @@
-package com.bobocode.parser.support;
+package com.bobocode.support;
 
 import org.assertj.core.api.AbstractMapAssert;
 
@@ -68,3 +68,4 @@ public class YamlPropertiesAssert extends AbstractMapAssert<YamlPropertiesAssert
         return this;
     }
 }
+

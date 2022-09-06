@@ -2,7 +2,7 @@ package com.bobocode.parser;
 
 import com.bobocode.exception.PersistenceFileNotFoundException;
 import com.bobocode.exception.PersistenceUnitNotFoundException;
-import com.bobocode.parser.support.YamlPropertiesAssert;
+import com.bobocode.support.YamlPropertiesAssert;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
