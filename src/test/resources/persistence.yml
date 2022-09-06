@@ -1,6 +1,6 @@
-log-level: INFO
+logLevel: INFO
 
-persistence-unit:
+persistenceUnit:
   name: h2
   dataSource:
     jdbcUrl: jdbc:h2:mem:testdb
@@ -9,7 +9,7 @@ persistence-unit:
   dialect: h2
 
 ---
-persistence-unit:
+persistenceUnit:
   name: unused-unit
   dataSource:
     jdbcUrl: unused-url

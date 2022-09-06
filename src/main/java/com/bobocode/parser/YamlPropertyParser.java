@@ -15,37 +15,42 @@ import java.util.stream.StreamSupport;
 public class YamlPropertyParser implements PropertyParser {
 
     private static final String DEFAULT_PERSISTENCE_FILE = "persistence.yml";
-    private static final String PERSISTENCE_UNIT_PROPERTY = "persistence-unit";
+    private static final String PERSISTENCE_UNIT_PROPERTY = "persistenceUnit";
     private static final String NAME_PROPERTY = "name";
 
     @Override
     public Map<String, String> readPropertiesForPersistenceUnit(String persistenceUnit) {
-        final ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+        return readPropertiesForPersistenceUnit(DEFAULT_PERSISTENCE_FILE, persistenceUnit);
+    }
 
-        log.info("Looking up for the file: {}", DEFAULT_PERSISTENCE_FILE);
-        final InputStream persistencePropertiesFile = getPropertyFile(DEFAULT_PERSISTENCE_FILE, contextClassLoader);
+    @Override
+    public Map<String, String> readPropertiesForPersistenceUnit(String propertyFile, String persistenceUnit) {
+        ClassLoader contextClassLoader = this.getClass().getClassLoader();
+
+        log.info("Looking up for the file: {}", propertyFile);
+        InputStream persistencePropertiesFile = getPropertyFile(propertyFile, contextClassLoader);
         return getPropertiesForUnit(persistencePropertiesFile, persistenceUnit);
     }
 
     @SuppressWarnings("unchecked")
     private Map<String, String> getPropertiesForUnit(InputStream propertyFile, String unitName) {
-        final Yaml yaml = new Yaml();
+        Yaml yaml = new Yaml();
 
-        final Iterable<Object> objectIterable = yaml.loadAll(propertyFile);
+        Iterable<Object> objectIterable = yaml.loadAll(propertyFile);
 
         log.trace("Looking up for the persistence unit: {}", unitName);
-        final Object propertyBlock = StreamSupport.stream(objectIterable.spliterator(), false)
+        Object propertyBlock = StreamSupport.stream(objectIterable.spliterator(), false)
                 .filter(propertiesBlock -> hasCorrectPersistenceUnitName(unitName, propertiesBlock))
                 .findAny()
                 .orElseThrow(() -> {
-                    final String errorMessage = String.format("Persistence unit %s was not found", unitName);
+                    String errorMessage = String.format("Persistence unit %s was not found", unitName);
                     log.error(errorMessage);
                     return new PersistenceUnitNotFoundException(errorMessage);
                 });
         log.trace("Persistence unit {} was found", unitName);
 
         log.trace("Resolving properties from the property block for the current persistence unit");
-        final Object collectedProperties = mapObjectTo(propertyBlock, Map.class).entrySet().stream()
+        Object collectedProperties = mapObjectTo(propertyBlock, Map.class).entrySet().stream()
                 .flatMap(propertyRoot -> getProperties(mapObjectTo(propertyRoot, Map.Entry.class)))
                 .collect(Collectors.toMap(property -> mapObjectTo(property, Map.Entry.class).getKey(),
                         property -> mapObjectTo(property, Map.Entry.class).getValue()));
@@ -67,14 +72,14 @@ public class YamlPropertyParser implements PropertyParser {
         if (Map.class.isAssignableFrom(currentProperty.getValue().getClass())) {
             return mapObjectTo(currentProperty.getValue(), Map.class).entrySet().stream()
                     .flatMap(property -> {
-                        final Map.Entry<String, Object> innerProperty = mapObjectTo(property, Map.Entry.class);
+                        Map.Entry<String, Object> innerProperty = mapObjectTo(property, Map.Entry.class);
                         return getPropertyName(
                                 propertyNamePrefix + "." + innerProperty.getKey(), innerProperty);
                     });
         }
-        final String propertyName = propertyNamePrefix.contains(currentProperty.getKey()) ? propertyNamePrefix :
+        String propertyName = propertyNamePrefix.contains(currentProperty.getKey()) ? propertyNamePrefix :
                 propertyNamePrefix + ".";
-        final String propertyValue = mapObjectTo(currentProperty.getValue(), String.class);
+        String propertyValue = mapObjectTo(currentProperty.getValue(), String.class);
 
         log.trace("Found property: {}={}", propertyName, propertyValue);
         return Stream.of(Map.entry(propertyName, propertyValue));
@@ -82,28 +87,19 @@ public class YamlPropertyParser implements PropertyParser {
 
     private boolean hasCorrectPersistenceUnitName(String persistenceUnitName, Object propertiesBlock) {
         if (mapObjectTo(propertiesBlock, Map.class).containsKey(PERSISTENCE_UNIT_PROPERTY)) {
-            final Object persistenceUnit = mapObjectTo(propertiesBlock, Map.class).get(PERSISTENCE_UNIT_PROPERTY);
+            Object persistenceUnit = mapObjectTo(propertiesBlock, Map.class).get(PERSISTENCE_UNIT_PROPERTY);
             if (mapObjectTo(persistenceUnit, Map.class).containsKey(NAME_PROPERTY)) {
-                final Object currentPersistenceUnitName = mapObjectTo(persistenceUnit, Map.class).get(NAME_PROPERTY);
+                Object currentPersistenceUnitName = mapObjectTo(persistenceUnit, Map.class).get(NAME_PROPERTY);
                 return currentPersistenceUnitName.equals(persistenceUnitName);
             }
         }
         return false;
     }
 
-    @Override
-    public Map<String, String> readPropertiesForPersistenceUnit(String propertyFile, String persistenceUnit) {
-        final ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-
-        log.info("Looking up for the file: {}", propertyFile);
-        final InputStream persistencePropertiesFile = getPropertyFile(propertyFile, contextClassLoader);
-        return getPropertiesForUnit(persistencePropertiesFile, persistenceUnit);
-    }
-
     private InputStream getPropertyFile(String resourceName, ClassLoader contextClassLoader) {
-        final InputStream propertyFile = contextClassLoader.getResourceAsStream(resourceName);
+        InputStream propertyFile = contextClassLoader.getResourceAsStream(resourceName);
         if (propertyFile == null) {
-            final String errorMessage = String.format("Persistence file %s was not found", resourceName);
+            String errorMessage = String.format("Persistence file %s was not found", resourceName);
             log.error(errorMessage);
             throw new PersistenceFileNotFoundException(errorMessage);
         }

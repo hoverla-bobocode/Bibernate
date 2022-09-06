@@ -1,4 +1,4 @@
-persistence-unit:
+persistenceUnit:
   name: h2
   dataSource:
     jdbcUrl: jdbc:h2:mem:testdb
@@ -9,7 +9,7 @@ log-level: INFO
 
 ---
 
-persistence-unit:
+persistenceUnit:
   name: mysql
   dataSource:
     jdbcUrl: jdbc:mysql://127.0.0.1:3306/test_database
