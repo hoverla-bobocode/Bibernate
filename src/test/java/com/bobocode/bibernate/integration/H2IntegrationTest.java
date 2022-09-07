@@ -2,6 +2,7 @@ package com.bobocode.bibernate.integration;
 
 import com.bobocode.bibernate.EntityPersister;
 import com.bobocode.bibernate.H2Dialect;
+import com.bobocode.bibernate.PersistenceContext;
 import com.bobocode.bibernate.integration.entity.Product;
 import com.bobocode.bibernate.session.Session;
 import com.bobocode.bibernate.session.SessionImpl;
@@ -20,15 +21,25 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class H2IntegrationTest {
+
+    private DataSource dataSource;
     private Session session;
 
     @BeforeEach
     void setUp() throws SQLException {
+        dataSource = createDataSource();
+        session = createSession(dataSource);
+    }
+
+    private static DataSource createDataSource() throws SQLException {
         DataSource dataSource = new JdbcDataSource();
         dataSource.unwrap(JdbcDataSource.class)
                 .setUrl("jdbc:h2:mem:default;INIT=RUNSCRIPT FROM 'src/test/resources/sql/product.sql'");
+        return dataSource;
+    }
 
-        session = new SessionImpl(new EntityPersister(dataSource), new H2Dialect());
+    private static SessionImpl createSession(DataSource dataSource) {
+        return new SessionImpl(new EntityPersister(dataSource), new H2Dialect(), new PersistenceContext());
     }
 
     @Test
@@ -43,12 +54,23 @@ class H2IntegrationTest {
     }
 
     @Test
+    @DisplayName("Gets record by ID")
+    void getCachedRecordById() {
+        Product expectedProduct = new Product();
+        expectedProduct.id(1L).name("scissors").price(1.0);
+
+        Optional<Product> product = session.find(Product.class, 1L);
+        Optional<Product> cachedProduct = session.find(Product.class, 1L);
+
+        assertThat(product).containsSame(cachedProduct.get());
+    }
+
+    @Test
     @DisplayName("Gets empty record by non-existing ID")
     void getEmptyRecordById() {
         Optional<Product> product = session.find(Product.class, 10L);
         assertThat(product).isEmpty();
     }
-
 
     @Test
     @DisplayName("Gets record by ID and properties")
@@ -75,5 +97,22 @@ class H2IntegrationTest {
         List<Product> limitedProducts = session.findAll(Product.class, 2, 0);
 
         assertThat(limitedProducts).containsAll(expectedProducts);
+    }
+
+    @Test
+    @DisplayName("Calls update on entity which fields were actually updated during the session")
+    void callsUpdateOnUpdatedEntity() throws Exception {
+        Optional<Product> product = session.find(Product.class, 1L);
+        Product updatableProduct = product.orElseThrow();
+        String newProductName = "new product name";
+        updatableProduct.name(newProductName);
+
+        session.close();
+
+        Optional<Product> updatedProduct = session.find(Product.class, updatableProduct.id());
+        assertThat(updatedProduct)
+                .isPresent()
+                .map(Product::name)
+                .hasValue(newProductName);
     }
 }

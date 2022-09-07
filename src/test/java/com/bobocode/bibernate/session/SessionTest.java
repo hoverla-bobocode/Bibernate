@@ -2,10 +2,11 @@ package com.bobocode.bibernate.session;
 
 import com.bobocode.bibernate.Dialect;
 import com.bobocode.bibernate.EntityPersister;
+import com.bobocode.bibernate.PersistenceContext;
 import com.bobocode.bibernate.Util;
 import com.bobocode.bibernate.exception.BibernateException;
+import com.bobocode.bibernate.integration.entity.Product;
 import com.bobocode.bibernate.session.entity.EntityClass;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,17 +16,20 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class SessionTest {
     @Mock
     private EntityPersister entityPersister;
-
+    @Mock
+    private PersistenceContext persistenceContext;
     @Mock
     private Dialect dialect;
 
@@ -72,5 +76,18 @@ class SessionTest {
         Optional<EntityClass> entity = session.find(EntityClass.class, primaryKey);
 
         assertThat(entity).isEmpty();
+    }
+
+    @Test
+    void close() {
+        long id = 1L;
+        Product product = new Product().id(id);
+        Map<String, Object> updatedColumns = Map.of("name", "new name");
+        when(persistenceContext.getUpdatedEntitiesColumnsMap()).thenReturn(Map.of(product, updatedColumns));
+        session.close();
+        verify(entityPersister).update(
+                "update products set name = ? where id = ?",
+                updatedColumns.values().stream().toList(),
+                List.of(id));
     }
 }
