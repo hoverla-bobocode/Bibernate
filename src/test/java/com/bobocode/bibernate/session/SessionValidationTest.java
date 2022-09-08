@@ -1,7 +1,6 @@
 package com.bobocode.bibernate.session;
 
 import com.bobocode.bibernate.Dialect;
-import com.bobocode.bibernate.EntityPersister;
 import com.bobocode.bibernate.exception.EntityMappingException;
 import com.bobocode.bibernate.session.entity.EntityClass;
 import com.bobocode.bibernate.session.entity.NotDefinedIdField;
@@ -23,9 +22,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class SessionValidationTest {
 
     @Mock
-    private EntityPersister entityPersister;
-
-    @Mock
     private Dialect dialect;
 
     @InjectMocks
@@ -38,11 +34,9 @@ class SessionValidationTest {
                 () -> session.findAll(null, 1, 0),
                 () -> session.findAll(null, Map.of("key", "value")));
 
-        findMethods.forEach(method -> {
-            assertThatThrownBy(method)
-                    .isInstanceOf(NullPointerException.class)
-                    .hasMessage("[type] argument must be not null");
-        });
+        findMethods.forEach(method -> assertThatThrownBy(method)
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("[type] argument must be not null"));
     }
 
     @Test
@@ -84,17 +78,16 @@ class SessionValidationTest {
                 () -> session.findAll(NotEntityClass.class, 1, 0),
                 () -> session.findAll(NotEntityClass.class, Map.of("key", "value")));
 
-        findMethods.forEach(method -> {
-            assertThatThrownBy(method)
-                    .isInstanceOf(EntityMappingException.class)
-                    .hasMessage(NotEntityClass.class.getName() + " is not defined as entity");
-        });
+        findMethods.forEach(method -> assertThatThrownBy(method)
+                .isInstanceOf(EntityMappingException.class)
+                .hasMessage(NotEntityClass.class.getName() + " is not defined as entity"));
     }
 
     @Test
     @DisplayName("Throws EntityMappingException when class does not have field annotated with @Id")
     void throwsEntityMappingExceptionWhenNoIdField() {
-        assertThatThrownBy(() -> session.find(NotDefinedIdField.class, 1L))
+        long id = 1L;
+        assertThatThrownBy(() -> session.find(NotDefinedIdField.class, id))
                 .isInstanceOf(EntityMappingException.class)
                 .hasMessage("Entity class must have field annotated with @Id");
     }

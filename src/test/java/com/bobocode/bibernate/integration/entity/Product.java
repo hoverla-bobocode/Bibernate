@@ -7,9 +7,6 @@ import com.bobocode.bibernate.annotation.Table;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-
 @Table("products")
 @Data
 @Entity

@@ -2,20 +2,26 @@ package com.bobocode.bibernate.session;
 
 import com.bobocode.bibernate.Dialect;
 import com.bobocode.bibernate.EntityPersister;
+import com.bobocode.bibernate.PersistenceContext;
+import com.bobocode.bibernate.Util;
 import com.bobocode.bibernate.Validator;
 import com.bobocode.bibernate.Transaction;
 import com.bobocode.bibernate.exception.BibernateException;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.sql.DataSource;
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 import static com.bobocode.bibernate.Dialect.SELECT_ALL_BY_PROPERTIES_TEMPLATE;
 import static com.bobocode.bibernate.Dialect.SELECT_ALL_ID_TEMPLATE;
 import static com.bobocode.bibernate.Dialect.SELECT_ALL_TEMPLATE;
+import static com.bobocode.bibernate.Dialect.UPDATE_TEMPLATE;
+import static com.bobocode.bibernate.Dialect.prepareSetClause;
 import static com.bobocode.bibernate.Dialect.prepareWhereClause;
 import static com.bobocode.bibernate.Util.getTableName;
 
@@ -28,15 +34,24 @@ public class SessionImpl implements Session {
 
     private final EntityPersister entityPersister;
 
-    public SessionImpl(EntityPersister entityPersister, Dialect dialect) {
+    private final PersistenceContext persistenceContext;
+
+    public SessionImpl(DataSource dataSource, Dialect dialect) {
         this.dialect = dialect;
-        this.entityPersister = entityPersister;
+        this.entityPersister = new EntityPersister(dataSource);
+        this.persistenceContext = new PersistenceContext();
     }
 
     @Override
     public <T> Optional<T> find(Class<T> type, Object primaryKey) {
         Objects.requireNonNull(type, TYPE_MUST_NOT_BE_NULL_MSG);
         Objects.requireNonNull(primaryKey, "[primaryKey] argument must be not null");
+
+        Optional<T> cachedEntity = persistenceContext.getEntity(type, primaryKey);
+        if (cachedEntity.isPresent()) {
+            return cachedEntity;
+        }
+
         Validator.validateEntity(type);
         Validator.checkIdValidPrimaryKeyType(type, primaryKey);
 
@@ -51,7 +66,10 @@ public class SessionImpl implements Session {
         if (foundEntities.size() != 1) {
             throw new BibernateException("More than 1 result were found!");
         }
-        return Optional.of(foundEntities.get(0));
+        Optional<T> entity = Optional.of(foundEntities.get(0));
+        persistenceContext.putEntity(primaryKey, entity.get());
+        persistenceContext.putEntitySnapshot(primaryKey, entity.get());
+        return entity;
     }
 
     @Override
@@ -79,7 +97,7 @@ public class SessionImpl implements Session {
         String tableName = getTableName(type);
         log.trace("Finding {} by properties", tableName);
 
-        String query = SELECT_ALL_BY_PROPERTIES_TEMPLATE.formatted(tableName, prepareWhereClause(properties));
+        String query = SELECT_ALL_BY_PROPERTIES_TEMPLATE.formatted(tableName, prepareWhereClause(properties.keySet()));
 
         List<Object> values = properties.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
@@ -99,6 +117,18 @@ public class SessionImpl implements Session {
         throw new UnsupportedOperationException();
     }
 
+    private <T> void update(T entity, Map<String, Object> updatedColumns) {
+        String query = prepareUpdateQuery(entity, updatedColumns);
+        List<Object> sortedColumnValues = updatedColumns
+                .entrySet()
+                .stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(Map.Entry::getValue)
+                .toList();
+        List<Object> propertiesToFilter = List.of(Util.getValueFromField(Util.getIdField(entity.getClass()), entity));
+        entityPersister.update(query, sortedColumnValues, propertiesToFilter);
+    }
+
     @Override
     public <T> void delete(T entity) {
         throw new UnsupportedOperationException();
@@ -106,7 +136,8 @@ public class SessionImpl implements Session {
 
     @Override
     public void flush() {
-        throw new UnsupportedOperationException();
+        var updatedEntitiesColumnsMap = persistenceContext.getUpdatedEntitiesColumnsMap();
+        updatedEntitiesColumnsMap.forEach(this::update);
     }
 
     @Override
@@ -122,5 +153,19 @@ public class SessionImpl implements Session {
     @Override
     public Transaction rollbackTransaction() {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void close() {
+       flush();
+    }
+
+    private String prepareUpdateQuery(Object entity, Map<String, Object> updatedColumns) {
+        Field idField = Util.getIdField(entity.getClass());
+        String idColumnName = Util.getColumnName(idField);
+        String tableName = Util.getTableName(entity.getClass());
+        String setClause = prepareSetClause(updatedColumns.keySet());
+        String whereClause = prepareWhereClause(Set.of(idColumnName));
+        return UPDATE_TEMPLATE.formatted(tableName, setClause, whereClause);
     }
 }

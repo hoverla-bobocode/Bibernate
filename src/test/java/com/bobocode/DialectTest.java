@@ -23,6 +23,6 @@ class DialectTest {
 
         String expectedResult = "big_decimal = ? AND integer = ? AND string = ? AND timestamp = ?";
 
-        assertEquals(expectedResult, prepareWhereClause(properties));
+        assertEquals(expectedResult, prepareWhereClause(properties.keySet()));
     }
 }
