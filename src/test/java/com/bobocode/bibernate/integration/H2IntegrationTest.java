@@ -1,8 +1,6 @@
 package com.bobocode.bibernate.integration;
 
-import com.bobocode.bibernate.EntityPersister;
 import com.bobocode.bibernate.H2Dialect;
-import com.bobocode.bibernate.PersistenceContext;
 import com.bobocode.bibernate.integration.entity.Product;
 import com.bobocode.bibernate.session.Session;
 import com.bobocode.bibernate.session.SessionImpl;
@@ -22,12 +20,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class H2IntegrationTest {
 
-    private DataSource dataSource;
     private Session session;
 
     @BeforeEach
     void setUp() throws SQLException {
-        dataSource = createDataSource();
+        DataSource dataSource = createDataSource();
         session = createSession(dataSource);
     }
 
@@ -39,7 +36,7 @@ class H2IntegrationTest {
     }
 
     private static SessionImpl createSession(DataSource dataSource) {
-        return new SessionImpl(new EntityPersister(dataSource), new H2Dialect(), new PersistenceContext());
+        return new SessionImpl(dataSource, new H2Dialect());
     }
 
     @Test
@@ -62,7 +59,7 @@ class H2IntegrationTest {
         Optional<Product> product = session.find(Product.class, 1L);
         Optional<Product> cachedProduct = session.find(Product.class, 1L);
 
-        assertThat(product).containsSame(cachedProduct.get());
+        assertThat(product).containsSame(cachedProduct.orElseThrow());
     }
 
     @Test

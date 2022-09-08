@@ -1,8 +1,6 @@
 package com.bobocode.bibernate.session;
 
 import com.bobocode.bibernate.Dialect;
-import com.bobocode.bibernate.EntityPersister;
-import com.bobocode.bibernate.PersistenceContext;
 import com.bobocode.bibernate.exception.EntityMappingException;
 import com.bobocode.bibernate.session.entity.EntityClass;
 import com.bobocode.bibernate.session.entity.NotDefinedIdField;
@@ -17,20 +15,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class SessionValidationTest {
-
-    @Mock
-    private EntityPersister entityPersister;
-
-    @Mock
-    private PersistenceContext persistenceContext;
 
     @Mock
     private Dialect dialect;
@@ -45,11 +34,9 @@ class SessionValidationTest {
                 () -> session.findAll(null, 1, 0),
                 () -> session.findAll(null, Map.of("key", "value")));
 
-        findMethods.forEach(method -> {
-            assertThatThrownBy(method)
-                    .isInstanceOf(NullPointerException.class)
-                    .hasMessage("[type] argument must be not null");
-        });
+        findMethods.forEach(method -> assertThatThrownBy(method)
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("[type] argument must be not null"));
     }
 
     @Test
@@ -91,8 +78,6 @@ class SessionValidationTest {
                 () -> session.findAll(NotEntityClass.class, 1, 0),
                 () -> session.findAll(NotEntityClass.class, Map.of("key", "value")));
 
-        when(persistenceContext.getEntity(any(), any())).thenReturn(Optional.empty());
-
         findMethods.forEach(method -> assertThatThrownBy(method)
                 .isInstanceOf(EntityMappingException.class)
                 .hasMessage(NotEntityClass.class.getName() + " is not defined as entity"));
@@ -102,7 +87,6 @@ class SessionValidationTest {
     @DisplayName("Throws EntityMappingException when class does not have field annotated with @Id")
     void throwsEntityMappingExceptionWhenNoIdField() {
         long id = 1L;
-        when(persistenceContext.getEntity(NotDefinedIdField.class, id)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> session.find(NotDefinedIdField.class, id))
                 .isInstanceOf(EntityMappingException.class)
                 .hasMessage("Entity class must have field annotated with @Id");

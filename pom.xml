@@ -74,10 +74,6 @@
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
-                    <compilerArgs>
-                        <!-- to preserve method parameter names after compilation -->
-                        <arg>-parameters</arg>
-                    </compilerArgs>
                     <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>

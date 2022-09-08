@@ -9,6 +9,7 @@ import com.bobocode.bibernate.Transaction;
 import com.bobocode.bibernate.exception.BibernateException;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.sql.DataSource;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
@@ -35,10 +36,10 @@ public class SessionImpl implements Session {
 
     private final PersistenceContext persistenceContext;
 
-    public SessionImpl(EntityPersister entityPersister, Dialect dialect, PersistenceContext persistenceContext) {
+    public SessionImpl(DataSource dataSource, Dialect dialect) {
         this.dialect = dialect;
-        this.entityPersister = entityPersister;
-        this.persistenceContext = persistenceContext;
+        this.entityPersister = new EntityPersister(dataSource);
+        this.persistenceContext = new PersistenceContext();
     }
 
     @Override
