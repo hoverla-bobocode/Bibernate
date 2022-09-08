@@ -20,19 +20,18 @@ import static com.bobocode.bibernate.Util.getColumnName;
 @Slf4j
 @AllArgsConstructor
 public class EntityPersister {
-    private final DataSource dataSource;
+    private final Connection connection;
 
     public <T> List<T> select(Class<T> type, String query, List<Object> columnValuesToFilter) {
-        try (Connection connection = dataSource.getConnection()) {
-            try (PreparedStatement statement = connection.prepareStatement(query)) {
-                for (int i = 0; i < columnValuesToFilter.size(); i++) {
-                    statement.setObject(i + 1, columnValuesToFilter.get(i));
-                }
-                log.trace(statement.toString());
-
-                ResultSet resultSet = statement.executeQuery();
-                return processResultSet(type, resultSet);
+         try (PreparedStatement statement = connection.prepareStatement(query)) {
+            for (int i = 0; i < columnValuesToFilter.size(); i++) {
+                statement.setObject(i + 1, columnValuesToFilter.get(i));
             }
+            log.trace(statement.toString());
+
+            ResultSet resultSet = statement.executeQuery();
+            return processResultSet(type, resultSet);
+
         } catch (SQLException e) {
             throw new BibernateSQLException("Error loading data from DB", e);
         }
@@ -68,12 +67,10 @@ public class EntityPersister {
     }
 
     public void update(String updateQuery, List<Object> updatedColumValues, List<Object> columnsValuesToFilter) {
-        try (Connection connection = dataSource.getConnection()) {
-            try (PreparedStatement statement = connection.prepareStatement(updateQuery)) {
-                setValuesForUpdateStatement(updatedColumValues, columnsValuesToFilter, statement);
-                log.trace(statement.toString());
-                statement.executeUpdate();
-            }
+        try (PreparedStatement statement = connection.prepareStatement(updateQuery)) {
+            setValuesForUpdateStatement(updatedColumValues, columnsValuesToFilter, statement);
+            log.trace(statement.toString());
+            statement.executeUpdate();
         } catch (SQLException e) {
             throw new BibernateSQLException("Error updating data in DB", e);
         }

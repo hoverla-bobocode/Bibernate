@@ -1,6 +1,6 @@
 package com.bobocode.bibernate.session;
 
-import com.bobocode.bibernate.Transaction;
+import com.bobocode.bibernate.transaction.Transaction;
 import com.bobocode.bibernate.exception.EntityMappingException;
 
 import java.util.List;
@@ -59,8 +59,8 @@ public interface Session extends AutoCloseable {
     <T> void save(T entity);
     <T> void update(T entity);
     <T> void delete(T entity);
+    void close();
+
     void flush();
-    Transaction beginTransaction();
-    Transaction commitTransaction();
-    Transaction rollbackTransaction();
+    Transaction getTransaction();
 }

@@ -5,12 +5,16 @@ import com.bobocode.bibernate.EntityPersister;
 import com.bobocode.bibernate.PersistenceContext;
 import com.bobocode.bibernate.Util;
 import com.bobocode.bibernate.Validator;
-import com.bobocode.bibernate.Transaction;
+import com.bobocode.bibernate.exception.BibernateSQLException;
+import com.bobocode.bibernate.transaction.Transaction;
 import com.bobocode.bibernate.exception.BibernateException;
+import com.bobocode.bibernate.transaction.TransactionImpl;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.sql.DataSource;
 import java.lang.reflect.Field;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -36,14 +40,30 @@ public class SessionImpl implements Session {
 
     private final PersistenceContext persistenceContext;
 
+    private Transaction transaction;
+
+    private Connection connection;
+
+    private boolean isActive;
+
     public SessionImpl(DataSource dataSource, Dialect dialect) {
+        getConnection(dataSource);
         this.dialect = dialect;
-        this.entityPersister = new EntityPersister(dataSource);
+        this.entityPersister = new EntityPersister(connection);
         this.persistenceContext = new PersistenceContext();
+        this.isActive = true;
     }
 
+    private void getConnection(DataSource dataSource) {
+        try {
+            this.connection = dataSource.getConnection();
+        } catch (SQLException e) {
+            throw new BibernateSQLException("Error occurred while connection creating:", e);
+        }
+    }
     @Override
     public <T> Optional<T> find(Class<T> type, Object primaryKey) {
+        checkIsOpen();
         Objects.requireNonNull(type, TYPE_MUST_NOT_BE_NULL_MSG);
         Objects.requireNonNull(primaryKey, "[primaryKey] argument must be not null");
 
@@ -74,6 +94,7 @@ public class SessionImpl implements Session {
 
     @Override
     public <T> List<T> findAll(Class<T> type, int limit, int offset) {
+        checkIsOpen();
         Objects.requireNonNull(type, TYPE_MUST_NOT_BE_NULL_MSG);
         Validator.checkNotNegativeNumber(limit, "[limit] argument cannot be negative number");
         Validator.checkNotNegativeNumber(offset, "[offset] argument cannot be negative number");
@@ -90,6 +111,7 @@ public class SessionImpl implements Session {
 
     @Override
     public <T> List<T> findAll(Class<T> type, Map<String, Object> properties) {
+        checkIsOpen();
         Objects.requireNonNull(type, TYPE_MUST_NOT_BE_NULL_MSG);
         Objects.requireNonNull(properties, "[properties] argument must be not null");
         Validator.validateEntity(type);
@@ -118,6 +140,7 @@ public class SessionImpl implements Session {
     }
 
     private <T> void update(T entity, Map<String, Object> updatedColumns) {
+        checkIsOpen();
         String query = prepareUpdateQuery(entity, updatedColumns);
         List<Object> sortedColumnValues = updatedColumns
                 .entrySet()
@@ -136,28 +159,15 @@ public class SessionImpl implements Session {
 
     @Override
     public void flush() {
+        checkIsOpen();
         var updatedEntitiesColumnsMap = persistenceContext.getUpdatedEntitiesColumnsMap();
         updatedEntitiesColumnsMap.forEach(this::update);
     }
 
     @Override
-    public Transaction beginTransaction() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Transaction commitTransaction() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Transaction rollbackTransaction() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public void close() {
        flush();
+       this.isActive = false;
     }
 
     private String prepareUpdateQuery(Object entity, Map<String, Object> updatedColumns) {
@@ -167,5 +177,21 @@ public class SessionImpl implements Session {
         String setClause = prepareSetClause(updatedColumns.keySet());
         String whereClause = prepareWhereClause(Set.of(idColumnName));
         return UPDATE_TEMPLATE.formatted(tableName, setClause, whereClause);
+    }
+
+    @Override
+    public Transaction getTransaction() {
+        checkIsOpen();
+        if (transaction == null) {
+            transaction = new TransactionImpl(connection);
+        }
+        return transaction;
+    }
+
+
+    void checkIsOpen() {
+        if (!isActive) {
+            throw new IllegalStateException("Session is already closed");
+        }
     }
 }
