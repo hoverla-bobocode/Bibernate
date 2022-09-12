@@ -1,12 +1,13 @@
 package com.bobocode.bibernate.action;
 
 import com.bobocode.bibernate.EntityPersister;
+import com.bobocode.bibernate.PersistenceContext;
 import com.bobocode.bibernate.Util;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -16,20 +17,35 @@ import static com.bobocode.bibernate.Dialect.*;
 public class InsertAction extends AbstractAction {
 
     private final EntityPersister entityPersister;
+    private final PersistenceContext persistenceContext;
 
-    public InsertAction(EntityPersister entityPersister, Object entity) {
+    public InsertAction(EntityPersister entityPersister, PersistenceContext persistenceContext, Object entity) {
         super(entity);
         this.entityPersister = entityPersister;
+        this.persistenceContext = persistenceContext;
     }
 
     @Override
     public void execute() {
-        Map<String, Object> columnsToInsert =
-                Arrays.stream(entity.getClass().getDeclaredFields())
-                        .collect(Collectors.toMap(Util::getColumnName, f -> Util.getValueFromField(f, entity)));
+        Field[] declaredFields = entity.getClass().getDeclaredFields();
+        Set<String> columnNamesToInsert = getColumnNamesToInsert(declaredFields);
+        String query = prepareInsertQuery(entity, columnNamesToInsert);
+        List<Object> columnsValues = getColumnsValues(declaredFields);
+        entityPersister.insert(query, columnsValues);
+        persistenceContext.putEntity(entity, Util.getIdFieldValue(entity));
+    }
 
-        List<Object> columnsValues = columnsToInsert.values().stream().toList();
-        entityPersister.insert(prepareInsertQuery(entity, columnsToInsert.keySet()), columnsValues);
+    private List<Object> getColumnsValues(Field[] declaredFields) {
+        return Arrays.stream(declaredFields)
+                .sorted(Comparator.comparing(Field::getName))
+                .map(f -> Util.getValueFromField(f, entity))
+                .toList();
+    }
+
+    private static Set<String> getColumnNamesToInsert(Field[] declaredFields) {
+        return Arrays.stream(declaredFields)
+                .map(Util::getColumnName)
+                .collect(Collectors.toSet());
     }
 
     private String prepareInsertQuery(Object entity, Set<String> columnsToInsert) {
