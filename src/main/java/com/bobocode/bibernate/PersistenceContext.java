@@ -25,7 +25,7 @@ public class PersistenceContext {
         return Optional.of(type.cast(entity));
     }
 
-    public void putEntity(Object key, Object entity) {
+    public void putEntity(Object entity, Object key) {
         Class<?> type = entity.getClass();
         EntityKey entityKey = new EntityKey(type, key);
         entityCacheMap.put(entityKey, entity);
@@ -72,6 +72,12 @@ public class PersistenceContext {
             updatedColumnsToValuesMap.put(Util.getColumnName(entityField), entityFieldValue);
         }
         return updatedColumnsToValuesMap;
+    }
+
+    public <T> void evict(T entity, Object key) {
+        EntityKey entityKey = new EntityKey(entity.getClass(), key);
+        entityCacheMap.remove(entityKey, entity);
+        entitySnapshotMap.remove(entityKey);
     }
 
     public record EntityKey(Class<?> type, Object key) {
