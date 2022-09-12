@@ -5,9 +5,12 @@ import com.bobocode.bibernate.integration.entity.Product;
 import com.bobocode.bibernate.session.Session;
 import com.bobocode.bibernate.session.SessionImpl;
 import org.h2.jdbcx.JdbcDataSource;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
@@ -26,6 +29,14 @@ class H2IntegrationTest {
     void setUp() throws SQLException {
         DataSource dataSource = createDataSource();
         session = createSession(dataSource);
+    }
+
+    @AfterEach
+    void tearDown(TestInfo testInfo) {
+        if (testInfo.getTags().contains("SkipCleanup")) {
+            return;
+        }
+        session.close();
     }
 
     private static DataSource createDataSource() throws SQLException {
@@ -51,7 +62,7 @@ class H2IntegrationTest {
     }
 
     @Test
-    @DisplayName("Gets record by ID")
+    @DisplayName("Gets cached record by ID")
     void getCachedRecordById() {
         Product expectedProduct = new Product();
         expectedProduct.id(1L).name("scissors").price(1.0);
@@ -96,6 +107,7 @@ class H2IntegrationTest {
         assertThat(limitedProducts).containsAll(expectedProducts);
     }
 
+    @Tag("SkipCleanup")
     @Test
     @DisplayName("Calls update on entity which fields were actually updated during the session")
     void callsUpdateOnUpdatedEntity() throws Exception {

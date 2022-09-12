@@ -9,6 +9,7 @@ import com.bobocode.bibernate.exception.BibernateSQLException;
 import com.bobocode.bibernate.transaction.Transaction;
 import com.bobocode.bibernate.exception.BibernateException;
 import com.bobocode.bibernate.transaction.TransactionImpl;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.sql.DataSource;
@@ -42,23 +43,24 @@ public class SessionImpl implements Session {
 
     private Transaction transaction;
 
+    @Getter
     private Connection connection;
 
-    private boolean isActive;
+    private boolean isOpen;
 
     public SessionImpl(DataSource dataSource, Dialect dialect) {
-        getConnection(dataSource);
+        initConnection(dataSource);
         this.dialect = dialect;
         this.entityPersister = new EntityPersister(connection);
         this.persistenceContext = new PersistenceContext();
-        this.isActive = true;
+        this.isOpen = true;
     }
 
-    private void getConnection(DataSource dataSource) {
+    private void initConnection(DataSource dataSource) {
         try {
             this.connection = dataSource.getConnection();
         } catch (SQLException e) {
-            throw new BibernateSQLException("Error occurred while connection creating:", e);
+            throw new BibernateSQLException("Error occurred while connection creating", e);
         }
     }
     @Override
@@ -165,9 +167,37 @@ public class SessionImpl implements Session {
     }
 
     @Override
+    public void beginTransaction() {
+        checkIsOpen();
+        initTransaction();
+        transaction.begin();
+    }
+
+    @Override
+    public void commitTransaction() {
+        checkIsOpen();
+        checkTransactionIsInitialized();
+        transaction.commit();
+    }
+
+    @Override
+    public void rollbackTransaction() {
+        checkIsOpen();
+        checkTransactionIsInitialized();
+        transaction.rollback();
+    }
+
+    @Override
     public void close() {
-       flush();
-       this.isActive = false;
+        log.trace("Closing session");
+        flush();
+        try {
+            connection.close();
+        } catch (SQLException e) {
+            log.error("Failed to close session");
+            throw new BibernateException("Failed to close session", e);
+        }
+        this.isOpen = false;
     }
 
     private String prepareUpdateQuery(Object entity, Map<String, Object> updatedColumns) {
@@ -179,18 +209,20 @@ public class SessionImpl implements Session {
         return UPDATE_TEMPLATE.formatted(tableName, setClause, whereClause);
     }
 
-    @Override
-    public Transaction getTransaction() {
-        checkIsOpen();
+    private void initTransaction() {
         if (transaction == null) {
             transaction = new TransactionImpl(connection);
         }
-        return transaction;
     }
 
+    private void checkTransactionIsInitialized() {
+        if (transaction == null) {
+            throw new BibernateException("Transaction was not initialized");
+        }
+    }
 
-    void checkIsOpen() {
-        if (!isActive) {
+    private void checkIsOpen() {
+        if (!isOpen) {
             throw new IllegalStateException("Session is already closed");
         }
     }

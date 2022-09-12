@@ -1,7 +1,9 @@
 package com.bobocode.bibernate.transaction;
 
 import com.bobocode.bibernate.exception.BibernateException;
+import com.bobocode.bibernate.session.Session;
 import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -17,19 +19,21 @@ import static com.bobocode.bibernate.transaction.TransactionStatus.ROLLED_BACK;
 
 @Slf4j
 public class TransactionImpl implements Transaction {
-    private Connection connection;
+    private final Connection connection;
 
     @Setter(AccessLevel.PRIVATE)
+    @Getter(AccessLevel.PACKAGE)
     private TransactionStatus status;
 
     public TransactionImpl(Connection connection) {
         this.connection = connection;
+        this.status = NOT_ACTIVE;
     }
 
     @Override
     public void begin() {
-        if (!NOT_ACTIVE.equals(status)) {
-            throw new IllegalStateException("Cannot begin transaction with status %s".formatted(status));
+        if (status == ACTIVE) {
+            throw new IllegalStateException("Transaction is already active");
         }
         log.trace("Begin transaction");
         try {
@@ -42,8 +46,8 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public void commit() {
-        if (!ACTIVE.equals(status)) {
-            throw new IllegalStateException("Cannot begin transaction with status %s".formatted(status));
+        if (status != ACTIVE) {
+            throw new IllegalStateException("Cannot commit not active transaction");
         }
         log.trace("Commit transaction");
         try {
@@ -71,6 +75,6 @@ public class TransactionImpl implements Transaction {
     }
 
     private boolean canRollback() {
-        return ACTIVE.equals(status) || FAILED_COMMIT.equals(status);
+        return status == ACTIVE || status == FAILED_COMMIT;
     }
 }
