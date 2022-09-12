@@ -27,7 +27,7 @@ class PersistenceContextTest {
     @Test
     void putEntity() {
         Product entity = new Product();
-        persistenceContext.putEntity(1L, entity);
+        persistenceContext.putEntity(entity, 1L);
 
         Optional<Product> actual = persistenceContext.getEntity(Product.class, 1L);
 
@@ -39,7 +39,7 @@ class PersistenceContextTest {
         long id = 1L;
         Product entity = new Product().id(id);
         Product entitySnapshot = new Product().id(id);
-        persistenceContext.putEntity(id, entity);
+        persistenceContext.putEntity(entity, id);
         persistenceContext.putEntitySnapshot(id, entitySnapshot);
 
         String newName = "new Name";

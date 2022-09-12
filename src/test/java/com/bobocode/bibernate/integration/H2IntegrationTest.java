@@ -46,7 +46,7 @@ class H2IntegrationTest {
         return dataSource;
     }
 
-    private static SessionImpl createSession(DataSource dataSource) {
+    private static SessionImpl createSession(DataSource dataSource) throws SQLException {
         return new SessionImpl(dataSource, new H2Dialect());
     }
 
@@ -107,10 +107,10 @@ class H2IntegrationTest {
         assertThat(limitedProducts).containsAll(expectedProducts);
     }
 
-    @Tag("SkipCleanup")
     @Test
     @DisplayName("Calls update on entity which fields were actually updated during the session")
-    void callsUpdateOnUpdatedEntity() throws Exception {
+    @Tag("SkipCleanup")
+    void callsUpdateOnUpdatedEntity() {
         Optional<Product> product = session.find(Product.class, 1L);
         Product updatableProduct = product.orElseThrow();
         String newProductName = "new product name";
@@ -123,5 +123,25 @@ class H2IntegrationTest {
                 .isPresent()
                 .map(Product::name)
                 .hasValue(newProductName);
+    }
+
+    @Test
+    void delete() {
+        session.delete(null);
+    }
+
+    @Test
+    void merge() {
+        session.merge(null);
+    }
+
+    @Test
+    void detach() {
+        session.detach(null);
+    }
+
+    @Test
+    void save() {
+        session.save(null);
     }
 }

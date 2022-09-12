@@ -43,4 +43,13 @@ public class Util {
                 .findFirst()
                 .orElseThrow();
     }
+
+    public static Object getIdFieldValue(Object entity) {
+        Class<?> entityType = entity.getClass();
+        return Util.getValueFromField(getIdField(entityType), entity);
+    }
+
+    public static <T> T cast(Object obj) {
+        return (T) obj;
+    }
 }

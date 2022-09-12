@@ -11,4 +11,8 @@ public class BibernateException extends RuntimeException {
     public BibernateException(String message, Throwable throwable) {
         super(message, throwable);
     }
+
+    public BibernateException(Throwable cause) {
+        super(cause);
+    }
 }

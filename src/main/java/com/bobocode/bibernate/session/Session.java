@@ -58,11 +58,13 @@ public interface Session extends AutoCloseable {
     <T> List<T> findAll(Class<T> type, Map<String, Object> properties);
 
     <T> void save(T entity);
-    <T> void update(T entity);
     <T> void delete(T entity);
-    void close();
+    <T> T merge(T entity);
+    <T> void detach(T entity);
 
     void flush();
+    void close();
+
     void beginTransaction();
     void commitTransaction();
     void rollbackTransaction();
