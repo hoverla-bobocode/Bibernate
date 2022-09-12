@@ -28,6 +28,7 @@ import static com.bobocode.bibernate.Dialect.SELECT_ALL_ID_TEMPLATE;
 import static com.bobocode.bibernate.Dialect.SELECT_ALL_TEMPLATE;
 import static com.bobocode.bibernate.Dialect.prepareWhereClause;
 import static com.bobocode.bibernate.Util.getTableName;
+import static com.bobocode.bibernate.Util.mergeEntities;
 
 @Slf4j
 public class SessionImpl implements Session {
@@ -120,10 +121,10 @@ public class SessionImpl implements Session {
     public <T> void save(T entity) {
         Objects.requireNonNull(entity);
         Validator.validateEntity(entity.getClass());
-        actionQueue.offer(new InsertAction(entityPersister, entity));
+        actionQueue.offer(new InsertAction(entityPersister, persistenceContext, entity));
     }
 
-    public <T> void update(T entity, Map<String, Object> updatedColumns) {
+    private  <T> void update(T entity, Map<String, Object> updatedColumns) {
         Objects.requireNonNull(entity);
         Objects.requireNonNull(updatedColumns);
         Validator.validateEntity(entity.getClass());
@@ -134,7 +135,9 @@ public class SessionImpl implements Session {
     public <T> void delete(T entity) {
         Objects.requireNonNull(entity);
         Validator.validateEntity(entity.getClass());
-        actionQueue.offer(new DeleteAction(entityPersister, entity));
+        Object cachedEntity = persistenceContext.getEntity(entity.getClass(), Util.getIdFieldValue(entity))
+                .orElseThrow(() -> new BibernateException("Detached entity cannot be removed"));
+        actionQueue.offer(new DeleteAction(entityPersister, persistenceContext, cachedEntity));
     }
 
     @Override
@@ -145,9 +148,14 @@ public class SessionImpl implements Session {
         Class<?> entityType = entity.getClass();
         Object idValue = Util.getIdFieldValue(entity);
 
-        return persistenceContext.getEntity(entityType, idValue)
-                .map(o -> (T) o)
-                .orElseGet(() -> (T) find(entityType, idValue).orElseThrow());
+        Optional<?> cachedEntity = persistenceContext.getEntity(entityType, idValue);
+        if (cachedEntity.isPresent()) {
+            return (T) mergeEntities(entity, cachedEntity.get());
+        }
+
+        Object loadedEntity = find(entityType, idValue).orElseThrow();
+        Optional<?> cachedLoadedEntity = persistenceContext.getEntity(loadedEntity.getClass(), Util.getIdFieldValue(loadedEntity));
+        return (T) mergeEntities(entity, cachedLoadedEntity.orElseThrow());
     }
 
     @Override
@@ -160,11 +168,19 @@ public class SessionImpl implements Session {
     }
 
     @Override
+    public <T> boolean contains(T entity) {
+        Objects.requireNonNull(entity);
+        return persistenceContext.getEntity(entity.getClass(), Util.getIdFieldValue(entity)).isPresent();
+    }
+
+    @Override
     public void flush() {
         log.trace("Flushing session queued actions");
         var updatedEntitiesColumnsMap = persistenceContext.getUpdatedEntitiesColumnsMap();
         updatedEntitiesColumnsMap.forEach(this::update);
-        actionQueue.forEach(Action::execute);
+        while (!actionQueue.isEmpty()) {
+            actionQueue.poll().execute();
+        }
     }
 
     @Override

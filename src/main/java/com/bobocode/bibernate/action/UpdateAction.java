@@ -25,14 +25,18 @@ public class UpdateAction extends AbstractAction {
     @Override
     public void execute() {
         String query = prepareUpdateQuery(entity, updatedColumns);
-        List<Object> sortedColumnValues = updatedColumns
+        List<Object> sortedColumnValues = getSortedColumnValues();
+        List<Object> propertiesToFilter = List.of(Util.getIdFieldValue(entity));
+        entityPersister.update(query, sortedColumnValues, propertiesToFilter);
+    }
+
+    private List<Object> getSortedColumnValues() {
+        return updatedColumns
                 .entrySet()
                 .stream()
                 .sorted(Map.Entry.comparingByKey())
                 .map(Map.Entry::getValue)
                 .toList();
-        List<Object> propertiesToFilter = List.of(Util.getIdFieldValue(entity));
-        entityPersister.update(query, sortedColumnValues, propertiesToFilter);
     }
 
     private String prepareUpdateQuery(Object entity, Map<String, Object> updatedColumns) {

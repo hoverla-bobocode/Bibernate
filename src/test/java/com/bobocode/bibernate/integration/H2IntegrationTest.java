@@ -127,21 +127,64 @@ class H2IntegrationTest {
 
     @Test
     void delete() {
-        session.delete(null);
+        Optional<Product> product = session.find(Product.class, 1L);
+        Product productToDelete = product.orElseThrow();
+
+        session.delete(productToDelete);
+
+        boolean remainsInContext = session.contains(productToDelete);
+        assertThat(remainsInContext).isTrue();
+
+        session.flush();
+        remainsInContext = session.contains(productToDelete);
+        assertThat(remainsInContext).isFalse();
     }
 
     @Test
     void merge() {
-        session.merge(null);
+        Product foundProduct = session.find(Product.class, 1L).orElseThrow();
+        session.detach(foundProduct);
+        String newProductName = "new scissors name";
+        foundProduct.name(newProductName);
+        assertThat(session.contains(foundProduct)).isFalse();
+        Product managedProduct = session.merge(foundProduct);
+        assertThat(session.contains(managedProduct)).isTrue();
+        assertThat(managedProduct).isNotSameAs(foundProduct);
+        assertThat(managedProduct.name()).isEqualTo(newProductName);
     }
 
     @Test
     void detach() {
-        session.detach(null);
+        Product foundProduct = session.find(Product.class, 1L).orElseThrow();
+        assertThat(session.contains(foundProduct)).isTrue();
+        session.detach(foundProduct);
+        assertThat(session.contains(foundProduct)).isFalse();
     }
 
     @Test
     void save() {
-        session.save(null);
+        Product product = new Product().id(10L).name("product name");
+
+        boolean cached = session.contains(product);
+        assertThat(cached).isFalse();
+
+        session.save(product);
+        session.flush();
+
+        cached = session.contains(product);
+        assertThat(cached).isTrue();
+    }
+
+    @Test
+    void updateOperations() {
+        Product foundProduct = session.find(Product.class, 1L).orElseThrow();
+        session.delete(foundProduct);
+        Product newProduct = new Product().id(10L).name("product name");
+        foundProduct.price(21.2);
+        session.save(newProduct);
+        session.flush();
+
+        assertThat(session.contains(foundProduct)).isFalse();
+        assertThat(session.contains(newProduct)).isTrue();
     }
 }
