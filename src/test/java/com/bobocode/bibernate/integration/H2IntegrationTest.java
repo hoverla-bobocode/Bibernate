@@ -4,9 +4,13 @@ import com.bobocode.bibernate.H2Dialect;
 import com.bobocode.bibernate.integration.entity.Product;
 import com.bobocode.bibernate.session.Session;
 import com.bobocode.bibernate.session.SessionImpl;
+import com.bobocode.bibernate.session.entity.EntityClass;
+import com.bobocode.bibernate.session.entity.NotEntityClass;
+import org.assertj.core.api.ThrowableAssert;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -20,7 +24,9 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+@Disabled
 class H2IntegrationTest {
 
     private Session session;
@@ -116,7 +122,7 @@ class H2IntegrationTest {
         String newProductName = "new product name";
         updatableProduct.name(newProductName);
 
-        session.close();
+        session.flush();
 
         Optional<Product> updatedProduct = session.find(Product.class, updatableProduct.id());
         assertThat(updatedProduct)
@@ -143,5 +149,32 @@ class H2IntegrationTest {
     @Test
     void save() {
         session.save(null);
+    }
+
+    @Test
+    @Tag("SkipCleanup")
+    @DisplayName("Throws IllegalStateException when session is closed")
+    void throwsIllegalStateExceptionWhenSessionIsClosed() {
+        session.close();
+        EntityClass entity = new EntityClass();
+
+        List<ThrowableAssert.ThrowingCallable> allMethods = List.of(
+                () -> session.find(NotEntityClass.class, 1L),
+                () -> session.findAll(NotEntityClass.class, 1, 0),
+                () -> session.findAll(NotEntityClass.class, Map.of("key", "value")),
+                () -> session.merge(entity),
+                () -> session.save(entity),
+                () -> session.delete(entity),
+                () -> session.detach(entity),
+                () -> session.flush(),
+                () -> session.beginTransaction(),
+                () -> session.commitTransaction(),
+                () -> session.rollbackTransaction(),
+                () -> session.close()
+        );
+
+        allMethods.forEach(method -> assertThatThrownBy(method)
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Session is already closed"));
     }
 }

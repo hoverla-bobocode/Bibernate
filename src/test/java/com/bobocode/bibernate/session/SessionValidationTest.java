@@ -2,6 +2,7 @@ package com.bobocode.bibernate.session;
 
 import com.bobocode.bibernate.Dialect;
 import com.bobocode.bibernate.exception.EntityMappingException;
+import com.bobocode.bibernate.integration.entity.Product;
 import com.bobocode.bibernate.session.entity.EntityClass;
 import com.bobocode.bibernate.session.entity.NotDefinedIdField;
 import com.bobocode.bibernate.session.entity.NotEntityClass;
@@ -12,14 +13,17 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import javax.sql.DataSource;
+import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.doReturn;
 
 @ExtendWith(MockitoExtension.class)
 class SessionValidationTest {
@@ -29,6 +33,9 @@ class SessionValidationTest {
 
     @Mock
     private DataSource dataSource;
+
+    @Mock
+    private Connection connection;
 
     @InjectMocks
     private SessionImpl session;

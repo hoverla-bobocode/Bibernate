@@ -5,7 +5,6 @@ import com.bobocode.bibernate.EntityPersister;
 import com.bobocode.bibernate.PersistenceContext;
 import com.bobocode.bibernate.Util;
 import com.bobocode.bibernate.Validator;
-import com.bobocode.bibernate.Transaction;
 import com.bobocode.bibernate.action.Action;
 import com.bobocode.bibernate.action.DeleteAction;
 import com.bobocode.bibernate.action.InsertAction;
@@ -20,16 +19,12 @@ import lombok.extern.slf4j.Slf4j;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.lang.reflect.Field;
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.Queue;
-import java.util.Set;
 
 import static com.bobocode.bibernate.Dialect.SELECT_ALL_BY_PROPERTIES_TEMPLATE;
 import static com.bobocode.bibernate.Dialect.SELECT_ALL_ID_TEMPLATE;
@@ -60,10 +55,10 @@ public class SessionImpl implements Session {
     public SessionImpl(DataSource dataSource, Dialect dialect) {
         initConnection(dataSource);
         this.dialect = dialect;
-        this.isOpen = true;
         this.entityPersister = new EntityPersister(connection);
         this.persistenceContext = new PersistenceContext();
         this.actionQueue = new PriorityQueue<>(Action.comparingPriority());
+        this.isOpen = true;
     }
 
     private void initConnection(DataSource dataSource) {
@@ -143,6 +138,7 @@ public class SessionImpl implements Session {
 
     @Override
     public <T> void save(T entity) {
+        checkIsOpen();
         Objects.requireNonNull(entity);
         Validator.validateEntity(entity.getClass());
         actionQueue.offer(new InsertAction(entityPersister, entity));
@@ -157,6 +153,7 @@ public class SessionImpl implements Session {
 
     @Override
     public <T> void delete(T entity) {
+        checkIsOpen();
         Objects.requireNonNull(entity);
         Validator.validateEntity(entity.getClass());
         actionQueue.offer(new DeleteAction(entityPersister, entity));
@@ -164,6 +161,7 @@ public class SessionImpl implements Session {
 
     @Override
     public <T> T merge(T entity) {
+        checkIsOpen();
         Objects.requireNonNull(entity);
         Validator.validateEntity(entity.getClass());
 
@@ -177,6 +175,7 @@ public class SessionImpl implements Session {
 
     @Override
     public <T> void detach(T entity) {
+        checkIsOpen();
         Objects.requireNonNull(entity);
         Validator.validateEntity(entity.getClass());
 
@@ -186,7 +185,7 @@ public class SessionImpl implements Session {
 
     @Override
     public void flush() {
-            checkIsOpen();
+        checkIsOpen();
         log.trace("Flushing session queued actions");
         var updatedEntitiesColumnsMap = persistenceContext.getUpdatedEntitiesColumnsMap();
         updatedEntitiesColumnsMap.forEach(this::update);
@@ -216,6 +215,7 @@ public class SessionImpl implements Session {
 
     @Override
     public void close() {
+        checkIsOpen();
         log.trace("Closing session");
         flush();
         try {
