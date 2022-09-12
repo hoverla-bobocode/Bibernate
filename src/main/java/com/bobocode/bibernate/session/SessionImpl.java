@@ -6,24 +6,29 @@ import com.bobocode.bibernate.PersistenceContext;
 import com.bobocode.bibernate.Util;
 import com.bobocode.bibernate.Validator;
 import com.bobocode.bibernate.Transaction;
+import com.bobocode.bibernate.action.Action;
+import com.bobocode.bibernate.action.DeleteAction;
+import com.bobocode.bibernate.action.InsertAction;
+import com.bobocode.bibernate.action.UpdateAction;
 import com.bobocode.bibernate.exception.BibernateException;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.sql.DataSource;
-import java.lang.reflect.Field;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
+import java.util.PriorityQueue;
+import java.util.Queue;
 
 import static com.bobocode.bibernate.Dialect.SELECT_ALL_BY_PROPERTIES_TEMPLATE;
 import static com.bobocode.bibernate.Dialect.SELECT_ALL_ID_TEMPLATE;
 import static com.bobocode.bibernate.Dialect.SELECT_ALL_TEMPLATE;
-import static com.bobocode.bibernate.Dialect.UPDATE_TEMPLATE;
-import static com.bobocode.bibernate.Dialect.prepareSetClause;
 import static com.bobocode.bibernate.Dialect.prepareWhereClause;
 import static com.bobocode.bibernate.Util.getTableName;
+import static com.bobocode.bibernate.Util.mergeEntities;
 
 @Slf4j
 public class SessionImpl implements Session {
@@ -36,10 +41,15 @@ public class SessionImpl implements Session {
 
     private final PersistenceContext persistenceContext;
 
-    public SessionImpl(DataSource dataSource, Dialect dialect) {
+    private final Queue<Action> actionQueue;
+    private final Connection connection;
+
+    public SessionImpl(DataSource dataSource, Dialect dialect) throws SQLException {
         this.dialect = dialect;
-        this.entityPersister = new EntityPersister(dataSource);
+        this.connection = dataSource.getConnection();
+        this.entityPersister = new EntityPersister(connection);
         this.persistenceContext = new PersistenceContext();
+        this.actionQueue = new PriorityQueue<>(Action.comparingPriority());
     }
 
     @Override
@@ -67,7 +77,7 @@ public class SessionImpl implements Session {
             throw new BibernateException("More than 1 result were found!");
         }
         Optional<T> entity = Optional.of(foundEntities.get(0));
-        persistenceContext.putEntity(primaryKey, entity.get());
+        persistenceContext.putEntity(entity.get(), primaryKey);
         persistenceContext.putEntitySnapshot(primaryKey, entity.get());
         return entity;
     }
@@ -109,35 +119,68 @@ public class SessionImpl implements Session {
 
     @Override
     public <T> void save(T entity) {
-        throw new UnsupportedOperationException();
+        Objects.requireNonNull(entity);
+        Validator.validateEntity(entity.getClass());
+        actionQueue.offer(new InsertAction(entityPersister, persistenceContext, entity));
     }
 
-    @Override
-    public <T> void update(T entity) {
-        throw new UnsupportedOperationException();
-    }
-
-    private <T> void update(T entity, Map<String, Object> updatedColumns) {
-        String query = prepareUpdateQuery(entity, updatedColumns);
-        List<Object> sortedColumnValues = updatedColumns
-                .entrySet()
-                .stream()
-                .sorted(Map.Entry.comparingByKey())
-                .map(Map.Entry::getValue)
-                .toList();
-        List<Object> propertiesToFilter = List.of(Util.getValueFromField(Util.getIdField(entity.getClass()), entity));
-        entityPersister.update(query, sortedColumnValues, propertiesToFilter);
+    private  <T> void update(T entity, Map<String, Object> updatedColumns) {
+        Objects.requireNonNull(entity);
+        Objects.requireNonNull(updatedColumns);
+        Validator.validateEntity(entity.getClass());
+        actionQueue.offer(new UpdateAction(entityPersister, entity, updatedColumns));
     }
 
     @Override
     public <T> void delete(T entity) {
-        throw new UnsupportedOperationException();
+        Objects.requireNonNull(entity);
+        Validator.validateEntity(entity.getClass());
+        Object cachedEntity = persistenceContext.getEntity(entity.getClass(), Util.getIdFieldValue(entity))
+                .orElseThrow(() -> new BibernateException("Detached entity cannot be removed"));
+        actionQueue.offer(new DeleteAction(entityPersister, persistenceContext, cachedEntity));
+    }
+
+    @Override
+    public <T> T merge(T entity) {
+        Objects.requireNonNull(entity);
+        Validator.validateEntity(entity.getClass());
+
+        Class<?> entityType = entity.getClass();
+        Object idValue = Util.getIdFieldValue(entity);
+
+        Optional<?> cachedEntity = persistenceContext.getEntity(entityType, idValue);
+        if (cachedEntity.isPresent()) {
+            return (T) mergeEntities(entity, cachedEntity.get());
+        }
+
+        Object loadedEntity = find(entityType, idValue).orElseThrow();
+        Optional<?> cachedLoadedEntity = persistenceContext.getEntity(loadedEntity.getClass(), Util.getIdFieldValue(loadedEntity));
+        return (T) mergeEntities(entity, cachedLoadedEntity.orElseThrow());
+    }
+
+    @Override
+    public <T> void detach(T entity) {
+        Objects.requireNonNull(entity);
+        Validator.validateEntity(entity.getClass());
+
+        Object idFieldValue = Util.getIdFieldValue(entity);
+        persistenceContext.evict(entity, idFieldValue);
+    }
+
+    @Override
+    public <T> boolean contains(T entity) {
+        Objects.requireNonNull(entity);
+        return persistenceContext.getEntity(entity.getClass(), Util.getIdFieldValue(entity)).isPresent();
     }
 
     @Override
     public void flush() {
+        log.trace("Flushing session queued actions");
         var updatedEntitiesColumnsMap = persistenceContext.getUpdatedEntitiesColumnsMap();
         updatedEntitiesColumnsMap.forEach(this::update);
+        while (!actionQueue.isEmpty()) {
+            actionQueue.poll().execute();
+        }
     }
 
     @Override
@@ -157,15 +200,13 @@ public class SessionImpl implements Session {
 
     @Override
     public void close() {
-       flush();
-    }
-
-    private String prepareUpdateQuery(Object entity, Map<String, Object> updatedColumns) {
-        Field idField = Util.getIdField(entity.getClass());
-        String idColumnName = Util.getColumnName(idField);
-        String tableName = Util.getTableName(entity.getClass());
-        String setClause = prepareSetClause(updatedColumns.keySet());
-        String whereClause = prepareWhereClause(Set.of(idColumnName));
-        return UPDATE_TEMPLATE.formatted(tableName, setClause, whereClause);
+        log.trace("Closing session");
+        flush();
+        try {
+            connection.close();
+        } catch (SQLException e) {
+            log.error("Failed to close session");
+            throw new BibernateException(e);
+        }
     }
 }
