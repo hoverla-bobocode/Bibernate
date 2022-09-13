@@ -4,6 +4,9 @@ import com.bobocode.bibernate.H2Dialect;
 import com.bobocode.bibernate.integration.entity.Product;
 import com.bobocode.bibernate.session.Session;
 import com.bobocode.bibernate.session.SessionImpl;
+import com.bobocode.bibernate.session.entity.EntityClass;
+import com.bobocode.bibernate.session.entity.NotEntityClass;
+import org.assertj.core.api.ThrowableAssert;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,6 +23,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class H2IntegrationTest {
 
@@ -109,14 +113,13 @@ class H2IntegrationTest {
 
     @Test
     @DisplayName("Calls update on entity which fields were actually updated during the session")
-    @Tag("SkipCleanup")
     void callsUpdateOnUpdatedEntity() {
         Optional<Product> product = session.find(Product.class, 1L);
         Product updatableProduct = product.orElseThrow();
         String newProductName = "new product name";
         updatableProduct.name(newProductName);
 
-        session.close();
+        session.flush();
 
         Optional<Product> updatedProduct = session.find(Product.class, updatableProduct.id());
         assertThat(updatedProduct)
@@ -186,5 +189,33 @@ class H2IntegrationTest {
 
         assertThat(session.contains(foundProduct)).isFalse();
         assertThat(session.contains(newProduct)).isTrue();
+    }
+
+    @Test
+    @Tag("SkipCleanup")
+    @DisplayName("Throws IllegalStateException when session is closed")
+    void throwsIllegalStateExceptionWhenSessionIsClosed() {
+        session.close();
+        EntityClass entity = new EntityClass();
+
+        List<ThrowableAssert.ThrowingCallable> allMethods = List.of(
+                () -> session.find(NotEntityClass.class, 1L),
+                () -> session.findAll(NotEntityClass.class, 1, 0),
+                () -> session.findAll(NotEntityClass.class, Map.of("key", "value")),
+                () -> session.contains(entity),
+                () -> session.merge(entity),
+                () -> session.save(entity),
+                () -> session.delete(entity),
+                () -> session.detach(entity),
+                () -> session.flush(),
+                () -> session.begin(),
+                () -> session.commit(),
+                () -> session.rollback(),
+                () -> session.close()
+        );
+
+        allMethods.forEach(method -> assertThatThrownBy(method)
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Session is already closed"));
     }
 }

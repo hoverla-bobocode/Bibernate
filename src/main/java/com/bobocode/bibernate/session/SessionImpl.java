@@ -5,12 +5,13 @@ import com.bobocode.bibernate.EntityPersister;
 import com.bobocode.bibernate.PersistenceContext;
 import com.bobocode.bibernate.Util;
 import com.bobocode.bibernate.Validator;
-import com.bobocode.bibernate.Transaction;
 import com.bobocode.bibernate.action.Action;
 import com.bobocode.bibernate.action.DeleteAction;
 import com.bobocode.bibernate.action.InsertAction;
 import com.bobocode.bibernate.action.UpdateAction;
 import com.bobocode.bibernate.exception.BibernateException;
+import com.bobocode.bibernate.transaction.Transaction;
+import com.bobocode.bibernate.transaction.TransactionImpl;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.sql.DataSource;
@@ -42,18 +43,25 @@ public class SessionImpl implements Session {
     private final PersistenceContext persistenceContext;
 
     private final Queue<Action> actionQueue;
+
+    private Transaction transaction;
+
     private final Connection connection;
 
+    private boolean isOpen;
+
     public SessionImpl(DataSource dataSource, Dialect dialect) throws SQLException {
-        this.dialect = dialect;
         this.connection = dataSource.getConnection();
+        this.dialect = dialect;
         this.entityPersister = new EntityPersister(connection);
         this.persistenceContext = new PersistenceContext();
         this.actionQueue = new PriorityQueue<>(Action.comparingPriority());
+        this.isOpen = true;
     }
 
     @Override
     public <T> Optional<T> find(Class<T> type, Object primaryKey) {
+        checkIsOpen();
         Objects.requireNonNull(type, TYPE_MUST_NOT_BE_NULL_MSG);
         Objects.requireNonNull(primaryKey, "[primaryKey] argument must be not null");
 
@@ -84,6 +92,7 @@ public class SessionImpl implements Session {
 
     @Override
     public <T> List<T> findAll(Class<T> type, int limit, int offset) {
+        checkIsOpen();
         Objects.requireNonNull(type, TYPE_MUST_NOT_BE_NULL_MSG);
         Validator.checkNotNegativeNumber(limit, "[limit] argument cannot be negative number");
         Validator.checkNotNegativeNumber(offset, "[offset] argument cannot be negative number");
@@ -100,6 +109,7 @@ public class SessionImpl implements Session {
 
     @Override
     public <T> List<T> findAll(Class<T> type, Map<String, Object> properties) {
+        checkIsOpen();
         Objects.requireNonNull(type, TYPE_MUST_NOT_BE_NULL_MSG);
         Objects.requireNonNull(properties, "[properties] argument must be not null");
         Validator.validateEntity(type);
@@ -119,6 +129,7 @@ public class SessionImpl implements Session {
 
     @Override
     public <T> void save(T entity) {
+        checkIsOpen();
         Objects.requireNonNull(entity);
         Validator.validateEntity(entity.getClass());
         actionQueue.offer(new InsertAction(entityPersister, persistenceContext, entity));
@@ -133,6 +144,7 @@ public class SessionImpl implements Session {
 
     @Override
     public <T> void delete(T entity) {
+        checkIsOpen();
         Objects.requireNonNull(entity);
         Validator.validateEntity(entity.getClass());
         Object cachedEntity = persistenceContext.getEntity(entity.getClass(), Util.getIdFieldValue(entity))
@@ -142,6 +154,7 @@ public class SessionImpl implements Session {
 
     @Override
     public <T> T merge(T entity) {
+        checkIsOpen();
         Objects.requireNonNull(entity);
         Validator.validateEntity(entity.getClass());
 
@@ -160,6 +173,7 @@ public class SessionImpl implements Session {
 
     @Override
     public <T> void detach(T entity) {
+        checkIsOpen();
         Objects.requireNonNull(entity);
         Validator.validateEntity(entity.getClass());
 
@@ -169,12 +183,14 @@ public class SessionImpl implements Session {
 
     @Override
     public <T> boolean contains(T entity) {
+        checkIsOpen();
         Objects.requireNonNull(entity);
         return persistenceContext.getEntity(entity.getClass(), Util.getIdFieldValue(entity)).isPresent();
     }
 
     @Override
     public void flush() {
+        checkIsOpen();
         log.trace("Flushing session queued actions");
         var updatedEntitiesColumnsMap = persistenceContext.getUpdatedEntitiesColumnsMap();
         updatedEntitiesColumnsMap.forEach(this::update);
@@ -184,29 +200,55 @@ public class SessionImpl implements Session {
     }
 
     @Override
-    public Transaction beginTransaction() {
-        throw new UnsupportedOperationException();
+    public void begin() {
+        checkIsOpen();
+        initTransaction();
+        transaction.begin();
     }
 
     @Override
-    public Transaction commitTransaction() {
-        throw new UnsupportedOperationException();
+    public void commit() {
+        checkIsOpen();
+        checkTransactionIsInitialized();
+        transaction.commit();
     }
 
     @Override
-    public Transaction rollbackTransaction() {
-        throw new UnsupportedOperationException();
+    public void rollback() {
+        checkIsOpen();
+        checkTransactionIsInitialized();
+        transaction.rollback();
+    }
+
+    private void initTransaction() {
+        if (transaction == null) {
+            transaction = new TransactionImpl(connection);
+        }
+    }
+
+    private void checkTransactionIsInitialized() {
+        if (transaction == null) {
+            throw new BibernateException("Transaction was not initialized");
+        }
     }
 
     @Override
     public void close() {
+        checkIsOpen();
         log.trace("Closing session");
         flush();
         try {
             connection.close();
         } catch (SQLException e) {
             log.error("Failed to close session");
-            throw new BibernateException(e);
+            throw new BibernateException("Failed to close session", e);
+        }
+        this.isOpen = false;
+    }
+
+    private void checkIsOpen() {
+        if (!isOpen) {
+            throw new IllegalStateException("Session is already closed");
         }
     }
 }

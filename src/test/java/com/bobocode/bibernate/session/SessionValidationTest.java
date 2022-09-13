@@ -14,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import javax.sql.DataSource;
+import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
 
@@ -23,9 +24,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class SessionValidationTest {
 
     @Mock
-    private DataSource dataSource;
-    @Mock
     private Dialect dialect;
+
+    @Mock
+    private DataSource dataSource;
+
+    @Mock
+    private Connection connection;
 
     @InjectMocks
     private SessionImpl session;
