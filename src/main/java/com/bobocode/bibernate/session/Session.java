@@ -1,6 +1,5 @@
 package com.bobocode.bibernate.session;
 
-import com.bobocode.bibernate.Transaction;
 import com.bobocode.bibernate.exception.EntityMappingException;
 
 import java.util.List;
@@ -12,11 +11,10 @@ import java.util.Optional;
  * This interface is API for creating and removing persistence entity instances, finding them by primary key
  * or other properties.
  */
-public interface Session {
+public interface Session extends AutoCloseable {
 
     /**
      * Find entity by primary key. Searching entity of passed type and primary key.
-     * TODO: It's not implemented yet (see below)
      * If the entity instance is contained in the persistence context, it is returned from there.
      * @param type specifies class of entity
      * @param primaryKey value of primary key for filtering results
@@ -58,12 +56,15 @@ public interface Session {
     <T> List<T> findAll(Class<T> type, Map<String, Object> properties);
 
     <T> void save(T entity);
-    <T> void update(T entity);
     <T> void delete(T entity);
+    <T> T merge(T entity);
+    <T> void detach(T entity);
+    <T> boolean contains(T entity);
+
+    void begin();
+    void commit();
+    void rollback();
 
     void flush();
-    Transaction beginTransaction();
-    Transaction commitTransaction();
-    Transaction rollbackTransaction();
     void close();
 }

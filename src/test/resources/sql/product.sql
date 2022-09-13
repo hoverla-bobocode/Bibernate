@@ -2,7 +2,7 @@ create table products
 (
     id         bigint PRIMARY KEY AUTO_INCREMENT,
     name       text      not null,
-    price      double    not null,
+    price      double,
     created_at timestamp not null default CURRENT_TIMESTAMP()
 );
 
