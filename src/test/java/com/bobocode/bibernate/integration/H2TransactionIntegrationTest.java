@@ -5,9 +5,11 @@ import com.bobocode.bibernate.integration.entity.Product;
 import com.bobocode.bibernate.session.Session;
 import com.bobocode.bibernate.session.SessionImpl;
 import org.h2.jdbcx.JdbcDataSource;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
@@ -37,6 +39,14 @@ class H2TransactionIntegrationTest {
 
     private static SessionImpl createSession(DataSource dataSource) throws SQLException {
         return new SessionImpl(dataSource, new H2Dialect());
+    }
+
+    @AfterEach
+    void tearDown(TestInfo testInfo) {
+        if (testInfo.getTags().contains("SkipCleanup")) {
+            return;
+        }
+        session.close();
     }
 
     @Test
