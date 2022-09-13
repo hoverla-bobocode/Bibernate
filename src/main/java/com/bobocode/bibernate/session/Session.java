@@ -1,9 +1,7 @@
 package com.bobocode.bibernate.session;
 
-import com.bobocode.bibernate.transaction.Transaction;
 import com.bobocode.bibernate.exception.EntityMappingException;
 
-import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -69,6 +67,4 @@ public interface Session extends AutoCloseable {
 
     void flush();
     void close();
-
-    Connection getConnection();
 }

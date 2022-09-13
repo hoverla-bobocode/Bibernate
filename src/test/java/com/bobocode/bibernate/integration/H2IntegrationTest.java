@@ -114,14 +114,13 @@ class H2IntegrationTest {
 
     @Test
     @DisplayName("Calls update on entity which fields were actually updated during the session")
-    @Tag("SkipCleanup")
     void callsUpdateOnUpdatedEntity() {
         Optional<Product> product = session.find(Product.class, 1L);
         Product updatableProduct = product.orElseThrow();
         String newProductName = "new product name";
         updatableProduct.name(newProductName);
 
-        session.close();
+        session.flush();
 
         Optional<Product> updatedProduct = session.find(Product.class, updatableProduct.id());
         assertThat(updatedProduct)
@@ -204,6 +203,7 @@ class H2IntegrationTest {
                 () -> session.find(NotEntityClass.class, 1L),
                 () -> session.findAll(NotEntityClass.class, 1, 0),
                 () -> session.findAll(NotEntityClass.class, Map.of("key", "value")),
+                () -> session.contains(entity),
                 () -> session.merge(entity),
                 () -> session.save(entity),
                 () -> session.delete(entity),

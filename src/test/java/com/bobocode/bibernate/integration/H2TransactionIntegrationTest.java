@@ -42,7 +42,7 @@ class H2TransactionIntegrationTest {
         return dataSource;
     }
 
-    private static SessionImpl createSession(DataSource dataSource) {
+    private static SessionImpl createSession(DataSource dataSource) throws SQLException {
         return new SessionImpl(dataSource, new H2Dialect());
     }
 

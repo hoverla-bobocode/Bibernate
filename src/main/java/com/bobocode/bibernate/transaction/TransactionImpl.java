@@ -1,7 +1,6 @@
 package com.bobocode.bibernate.transaction;
 
 import com.bobocode.bibernate.exception.BibernateException;
-import com.bobocode.bibernate.session.Session;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
@@ -10,12 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-import static com.bobocode.bibernate.transaction.TransactionStatus.ACTIVE;
-import static com.bobocode.bibernate.transaction.TransactionStatus.COMMITTED;
-import static com.bobocode.bibernate.transaction.TransactionStatus.FAILED_COMMIT;
-import static com.bobocode.bibernate.transaction.TransactionStatus.FAILED_ROLLBACK;
-import static com.bobocode.bibernate.transaction.TransactionStatus.NOT_ACTIVE;
-import static com.bobocode.bibernate.transaction.TransactionStatus.ROLLED_BACK;
+import static com.bobocode.bibernate.transaction.TransactionStatus.*;
 
 @Slf4j
 public class TransactionImpl implements Transaction {

@@ -9,11 +9,9 @@ import com.bobocode.bibernate.action.Action;
 import com.bobocode.bibernate.action.DeleteAction;
 import com.bobocode.bibernate.action.InsertAction;
 import com.bobocode.bibernate.action.UpdateAction;
-import com.bobocode.bibernate.exception.BibernateSQLException;
 import com.bobocode.bibernate.transaction.Transaction;
 import com.bobocode.bibernate.exception.BibernateException;
 import com.bobocode.bibernate.transaction.TransactionImpl;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.sql.DataSource;
@@ -48,13 +46,12 @@ public class SessionImpl implements Session {
 
     private Transaction transaction;
 
-    @Getter
-    private Connection connection;
+    private final Connection connection;
 
     private boolean isOpen;
 
-    public SessionImpl(DataSource dataSource, Dialect dialect) {
-        initConnection(dataSource);
+    public SessionImpl(DataSource dataSource, Dialect dialect) throws SQLException {
+        this.connection = dataSource.getConnection();
         this.dialect = dialect;
         this.entityPersister = new EntityPersister(connection);
         this.persistenceContext = new PersistenceContext();
@@ -62,13 +59,6 @@ public class SessionImpl implements Session {
         this.isOpen = true;
     }
 
-    private void initConnection(DataSource dataSource) {
-        try {
-            this.connection = dataSource.getConnection();
-        } catch (SQLException e) {
-            throw new BibernateSQLException("Error occurred while connection creating", e);
-        }
-    }
     @Override
     public <T> Optional<T> find(Class<T> type, Object primaryKey) {
         checkIsOpen();
@@ -145,7 +135,7 @@ public class SessionImpl implements Session {
         actionQueue.offer(new InsertAction(entityPersister, persistenceContext, entity));
     }
 
-    private  <T> void update(T entity, Map<String, Object> updatedColumns) {
+    private <T> void update(T entity, Map<String, Object> updatedColumns) {
         Objects.requireNonNull(entity);
         Objects.requireNonNull(updatedColumns);
         Validator.validateEntity(entity.getClass());
@@ -193,6 +183,7 @@ public class SessionImpl implements Session {
 
     @Override
     public <T> boolean contains(T entity) {
+        checkIsOpen();
         Objects.requireNonNull(entity);
         return persistenceContext.getEntity(entity.getClass(), Util.getIdFieldValue(entity)).isPresent();
     }
@@ -229,6 +220,18 @@ public class SessionImpl implements Session {
         transaction.rollback();
     }
 
+    private void initTransaction() {
+        if (transaction == null) {
+            transaction = new TransactionImpl(connection);
+        }
+    }
+
+    private void checkTransactionIsInitialized() {
+        if (transaction == null) {
+            throw new BibernateException("Transaction was not initialized");
+        }
+    }
+
     @Override
     public void close() {
         checkIsOpen();
@@ -241,18 +244,6 @@ public class SessionImpl implements Session {
             throw new BibernateException("Failed to close session", e);
         }
         this.isOpen = false;
-    }
-
-    private void initTransaction() {
-        if (transaction == null) {
-            transaction = new TransactionImpl(connection);
-        }
-    }
-
-    private void checkTransactionIsInitialized() {
-        if (transaction == null) {
-            throw new BibernateException("Transaction was not initialized");
-        }
     }
 
     private void checkIsOpen() {
