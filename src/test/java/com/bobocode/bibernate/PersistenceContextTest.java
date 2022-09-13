@@ -40,7 +40,7 @@ class PersistenceContextTest {
         Product entity = new Product().id(id);
         Product entitySnapshot = new Product().id(id);
         persistenceContext.putEntity(entity, id);
-        persistenceContext.putEntitySnapshot(id, entitySnapshot);
+        persistenceContext.putEntitySnapshot(entitySnapshot, id);
 
         String newName = "new Name";
         double newPrice = 10.0;

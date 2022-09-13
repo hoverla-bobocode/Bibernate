@@ -22,7 +22,7 @@ public class EntityPersister {
     private final Connection connection;
 
     public <T> List<T> select(Class<T> type, String query, List<Object> columnValuesToFilter) {
-         try (PreparedStatement statement = connection.prepareStatement(query)) {
+        try (PreparedStatement statement = connection.prepareStatement(query)) {
             for (int i = 0; i < columnValuesToFilter.size(); i++) {
                 statement.setObject(i + 1, columnValuesToFilter.get(i));
             }
@@ -30,7 +30,6 @@ public class EntityPersister {
 
             ResultSet resultSet = statement.executeQuery();
             return processResultSet(type, resultSet);
-
         } catch (SQLException e) {
             throw new BibernateSQLException("Error loading data from DB", e);
         }

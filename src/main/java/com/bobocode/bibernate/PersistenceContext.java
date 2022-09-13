@@ -31,7 +31,7 @@ public class PersistenceContext {
         entityCacheMap.put(entityKey, entity);
     }
 
-    public void putEntitySnapshot(Object key, Object entity) {
+    public void putEntitySnapshot(Object entity, Object key) {
         Class<?> type = entity.getClass();
         EntityKey entityKey = new EntityKey(type, key);
         Object[] values = Arrays.stream(entity.getClass().getDeclaredFields()).sorted(Comparator.comparing(Field::getName))

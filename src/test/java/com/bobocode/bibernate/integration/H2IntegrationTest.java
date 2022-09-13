@@ -10,7 +10,6 @@ import org.assertj.core.api.ThrowableAssert;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -114,6 +113,7 @@ class H2IntegrationTest {
 
     @Test
     @DisplayName("Calls update on entity which fields were actually updated during the session")
+    @Tag("SkipCleanup")
     void callsUpdateOnUpdatedEntity() {
         Optional<Product> product = session.find(Product.class, 1L);
         Product updatableProduct = product.orElseThrow();
