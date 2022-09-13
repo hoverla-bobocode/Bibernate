@@ -113,7 +113,6 @@ class H2IntegrationTest {
 
     @Test
     @DisplayName("Calls update on entity which fields were actually updated during the session")
-    @Tag("SkipCleanup")
     void callsUpdateOnUpdatedEntity() {
         Optional<Product> product = session.find(Product.class, 1L);
         Product updatableProduct = product.orElseThrow();
@@ -209,9 +208,9 @@ class H2IntegrationTest {
                 () -> session.delete(entity),
                 () -> session.detach(entity),
                 () -> session.flush(),
-                () -> session.beginTransaction(),
-                () -> session.commitTransaction(),
-                () -> session.rollbackTransaction(),
+                () -> session.begin(),
+                () -> session.commit(),
+                () -> session.rollback(),
                 () -> session.close()
         );
 

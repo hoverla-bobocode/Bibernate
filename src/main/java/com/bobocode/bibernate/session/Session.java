@@ -61,9 +61,9 @@ public interface Session extends AutoCloseable {
     <T> void detach(T entity);
     <T> boolean contains(T entity);
 
-    void beginTransaction();
-    void commitTransaction();
-    void rollbackTransaction();
+    void begin();
+    void commit();
+    void rollback();
 
     void flush();
     void close();

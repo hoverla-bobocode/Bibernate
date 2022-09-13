@@ -6,21 +6,14 @@ import com.bobocode.bibernate.session.Session;
 import com.bobocode.bibernate.session.SessionImpl;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@Disabled
 class H2TransactionIntegrationTest {
 
     private Session session;
@@ -52,11 +45,11 @@ class H2TransactionIntegrationTest {
         Product expectedProduct = new Product();
         expectedProduct.id(1L).name("scissors").price(2.0);
 
-        session.beginTransaction();
+        session.begin();
         Product product = session.find(Product.class, 1L).orElseThrow();
         product.price(2.0);
         session.flush();
-        session.commitTransaction();
+        session.commit();
         session.detach(product);
 
         Product foundProduct = session.find(Product.class, 1L).orElseThrow();
@@ -69,11 +62,11 @@ class H2TransactionIntegrationTest {
         Product expectedProduct = new Product();
         expectedProduct.id(1L).name("scissors").price(1.0);
 
-        session.beginTransaction();
+        session.begin();
         Product product = session.find(Product.class, 1L).orElseThrow();
         product.price(2.0);
         session.flush();
-        session.rollbackTransaction();
+        session.rollback();
         session.detach(product);
 
         Product foundProduct = session.find(Product.class, 1L).orElseThrow();
@@ -85,7 +78,7 @@ class H2TransactionIntegrationTest {
     @Test
     @DisplayName("Entity is not updated when transaction is not committed")
     void notFinishTransaction() throws SQLException {
-        session.beginTransaction();
+        session.begin();
         Product product = session.find(Product.class, 1L).orElseThrow();
         product.price(2.0);
         session.flush();
@@ -93,6 +86,6 @@ class H2TransactionIntegrationTest {
 
         session = initSession();
         Product sameProductFromDB = session.find(Product.class, 1L).orElseThrow();
-        assertThat(product).isNotEqualTo(sameProductFromDB);
+        assertThat(product.price()).isNotEqualTo(sameProductFromDB.price());
     }
 }

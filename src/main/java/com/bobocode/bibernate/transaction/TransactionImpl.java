@@ -1,9 +1,6 @@
 package com.bobocode.bibernate.transaction;
 
 import com.bobocode.bibernate.exception.BibernateException;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.Connection;
@@ -15,8 +12,6 @@ import static com.bobocode.bibernate.transaction.TransactionStatus.*;
 public class TransactionImpl implements Transaction {
     private final Connection connection;
 
-    @Setter(AccessLevel.PRIVATE)
-    @Getter(AccessLevel.PACKAGE)
     private TransactionStatus status;
 
     public TransactionImpl(Connection connection) {
@@ -32,7 +27,7 @@ public class TransactionImpl implements Transaction {
         log.trace("Begin transaction");
         try {
             connection.setAutoCommit(false);
-            setStatus(ACTIVE);
+            status = ACTIVE;
         } catch (SQLException e) {
             throw new BibernateException("Error occurred while transaction beginning", e);
         }
@@ -46,9 +41,9 @@ public class TransactionImpl implements Transaction {
         log.trace("Commit transaction");
         try {
             connection.commit();
-            setStatus(COMMITTED);
+            status = COMMITTED;
         } catch (SQLException e) {
-            setStatus(FAILED_COMMIT);
+            status = FAILED_COMMIT;
             throw new BibernateException("Error occurred while transaction committing", e);
         }
     }
@@ -60,12 +55,16 @@ public class TransactionImpl implements Transaction {
         }
         try {
             connection.rollback();
-            setStatus(ROLLED_BACK);
+            status = ROLLED_BACK;
         } catch (SQLException e) {
-            setStatus(FAILED_ROLLBACK);
+            status = FAILED_ROLLBACK;
             throw new BibernateException("Error occurred while transaction rollback", e);
         }
 
+    }
+
+    public TransactionStatus getStatus() {
+        return status;
     }
 
     private boolean canRollback() {

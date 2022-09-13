@@ -5,12 +5,12 @@ import com.bobocode.bibernate.EntityPersister;
 import com.bobocode.bibernate.PersistenceContext;
 import com.bobocode.bibernate.Util;
 import com.bobocode.bibernate.Validator;
-import com.bobocode.bibernate.Transaction;
 import com.bobocode.bibernate.action.Action;
 import com.bobocode.bibernate.action.DeleteAction;
 import com.bobocode.bibernate.action.InsertAction;
 import com.bobocode.bibernate.action.UpdateAction;
 import com.bobocode.bibernate.exception.BibernateException;
+import com.bobocode.bibernate.transaction.Transaction;
 import com.bobocode.bibernate.transaction.TransactionImpl;
 import lombok.extern.slf4j.Slf4j;
 
@@ -200,21 +200,21 @@ public class SessionImpl implements Session {
     }
 
     @Override
-    public void beginTransaction() {
+    public void begin() {
         checkIsOpen();
         initTransaction();
         transaction.begin();
     }
 
     @Override
-    public void commitTransaction() {
+    public void commit() {
         checkIsOpen();
         checkTransactionIsInitialized();
         transaction.commit();
     }
 
     @Override
-    public void rollbackTransaction() {
+    public void rollback() {
         checkIsOpen();
         checkTransactionIsInitialized();
         transaction.rollback();
