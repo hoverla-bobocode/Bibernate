@@ -16,8 +16,9 @@ database in object-oriented manner</b>
 There are multiple steps you need to perform to correctly use Bibernate:
 
 1. Create `persistence.yml` [resource file](#persistenceyml-file-example) with information about your database
-2. Create [entities](#entity-declaration-example), that represent table from the database. Mark them with
-   the [`@Entity`](src/main/java/com/bobocode/bibernate/annotation/Entity.java) annotation
+2. Create [entities](#entity-declaration-example), that represent table from the database. 
+* Mark them with the [`@Entity`](src/main/java/com/bobocode/bibernate/annotation/Entity.java) annotation.
+* Add field that represents primary key of relevant table and annotated with the [`@Id`](src/main/java/com/bobocode/bibernate/annotation/Id.java)
 3. Create [`Session`](src/main/java/com/bobocode/bibernate/session/Session.java)
    object to interact with a persistence context. Look at
    the [example](#sessionsrcmainjavacombobocodebibernatesessionsessionjava-creation-example) below
@@ -43,19 +44,15 @@ import com.bobocode.bibernate.annotation.Id;
 import com.bobocode.bibernate.annotation.Table;
 import lombok.Data;
 
-@Table("products")
-@Data
+@Data // not sure about this
 @Entity
 public class Product {
 
     @Id
-    @Column("id")
     private Long id;
 
-    @Column("name")
     private String name;
 
-    @Column("price")
     private Double price;
 }
 ```
@@ -97,9 +94,68 @@ Create a schema for example]
 How to describe persistence units with .yml file]
 
 #### What is entity
-[What is entity, how to define it. Necessary annotations (@Entity, @Id, @Table) & 
-methods (constructor, maybe getters, setters). 
-Entity states (transient, persisted, detached, removed)]
+[
+* ~~What is entity, how to define it~~.
+* ~~Necessary annotations (@Entity, @Id, @Table)~~
+* & methods (constructor, maybe getters, setters). 
+* relations mapping ??
+* ~~Entity states (transient, persisted, detached, removed)~~
+* how to get entity in specific state ??
+* ]
+
+Entity is class that represents table in the database. Each entity instance corresponds to a row in that table. 
+Entity fields or properties represent columns of the related table.
+Class is defined as entity if it's annotated with `@Entity` and has field annotated with `@Id`, which represents primary key.
+
+You can use `@Table` annotation to specify table name. This annotation is optional. The lowercase class name is used 
+as table name if annotation is omitted.
+
+```java
+import com.bobocode.bibernate.annotation.Entity;
+import com.bobocode.bibernate.annotation.Id;
+import com.bobocode.bibernate.annotation.Table;
+
+@Entity
+@Table(value = "products")
+public class Product() {
+   @Id
+   private Long id;
+}
+```
+You can use `@Column` annotation to specify column name. This annotation is optional. The lowercase field name is used
+as column name if annotation is omitted.
+
+```java
+import com.bobocode.bibernate.annotation.Column;
+import com.bobocode.bibernate.annotation.Entity;
+import com.bobocode.bibernate.annotation.Id;
+import com.bobocode.bibernate.annotation.Table;
+
+@Entity
+@Table(value = "products")
+public class Product() {
+   @Id
+   private Long id;
+
+   @Column(value = "name")
+   private String productName;
+}
+```
+Every entity naturally has a lifecycle within the framework – it's either in a transient, persistent (or managed), 
+detached or deleted state.
+
+* Transient entity has neither any representation in the datastore nor in the current Session. 
+A transient entity is simply a POJO without any identifier. 
+* Persistent entity exist in the database, and persistent context tracks all the changes done 
+on the persistent entity by the client code. A persistent entity is mapped to a specific database row, 
+identified by the ID field. Session is responsible for tracking all changes done to a managed entity 
+and propagating these changes to database.
+* Detached entity has a representation in the database, but it is not managed by the Session. 
+Any changes to a detached entity will not be reflected in the database, and vice-versa.
+* Removed entity is object that was being persistent entity and now this has been passed to the session’s remove() method.
+
+
+
 
 #### What is [Session](src/main/java/com/bobocode/bibernate/session/Session.java)
 [Session methods (maybe use some table: method name - description)]
