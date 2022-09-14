@@ -38,6 +38,8 @@ class DataSourceProviderTest {
         assertEquals(user, dataSource.getUsername());
         assertEquals(password, dataSource.getPassword());
         assertEquals(driver, dataSource.getDriverClassName());
+
+        dataSource.close();
     }
 
     private Map<String, String> mockProperties(String url, String user, String password, String dialect,

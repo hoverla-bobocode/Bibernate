@@ -2,8 +2,6 @@ package com.bobocode.bibernate.integration;
 
 import com.bobocode.bibernate.integration.entity.Person;
 import com.bobocode.bibernate.session.Session;
-import com.bobocode.bibernate.session.SessionFactoryImpl;
-import com.bobocode.parser.YamlPropertyParser;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -15,9 +13,9 @@ class H2TransactionIntegrationTest extends BaseH2Integration {
 
     @Override
     @BeforeEach
-    void openSession() {
+    void init() {
         this.persistenceUnitName = "h2-transaction-integration-test";
-        super.openSession();
+        super.init();
     }
 
     @Test

@@ -24,7 +24,6 @@ class QueryHelperIntegrationTest extends BaseH2Integration {
 
     @Test
     void findById() {
-
         Product expectedProduct = new Product();
         expectedProduct.id(1L).name("scissors").price(1.0);
 

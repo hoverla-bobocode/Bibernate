@@ -10,16 +10,15 @@ import org.junit.jupiter.api.TestInfo;
 
 @Slf4j
 class BaseH2Integration {
-    private final String DEFAULT_PERSISTENCE_UNIT_NAME = "h2-integration-test";
 
     protected SessionFactoryImpl sessionFactory;
     protected Session session;
     protected String persistenceUnitName;
 
     @BeforeEach
-    void openSession() {
+    void init() {
         YamlPropertyParser parser = new YamlPropertyParser();
-        sessionFactory = new SessionFactoryImpl(parser, persistenceUnitName == null ? DEFAULT_PERSISTENCE_UNIT_NAME : persistenceUnitName);
+        sessionFactory = new SessionFactoryImpl(parser, persistenceUnitName == null ? "h2-integration-test" : persistenceUnitName);
         session = sessionFactory.openSession();
     }
 
