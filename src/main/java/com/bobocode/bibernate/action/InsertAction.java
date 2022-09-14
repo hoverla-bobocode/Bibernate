@@ -12,7 +12,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.bobocode.bibernate.Dialect.*;
+import static com.bobocode.bibernate.configuration.Dialect.INSERT_TEMPLATE;
+import static com.bobocode.bibernate.configuration.Dialect.PLACEHOLDER;
+import static com.bobocode.bibernate.configuration.Dialect.prepareValuesClause;
 
 public class InsertAction extends AbstractAction {
 

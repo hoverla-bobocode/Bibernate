@@ -1,101 +1,82 @@
 package com.bobocode.bibernate.integration;
 
-import com.bobocode.bibernate.H2Dialect;
+import com.bobocode.bibernate.integration.entity.Person;
 import com.bobocode.bibernate.integration.entity.Product;
 import com.bobocode.bibernate.session.Session;
-import com.bobocode.bibernate.session.SessionImpl;
-import org.h2.jdbcx.JdbcDataSource;
+import com.bobocode.bibernate.session.SessionFactoryImpl;
+import com.bobocode.parser.YamlPropertyParser;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
-
-import javax.sql.DataSource;
-import java.sql.SQLException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class H2TransactionIntegrationTest {
 
     private Session session;
+    private SessionFactoryImpl sessionFactory;
 
     @BeforeEach
-    void setUp() throws SQLException {
-        session = initSession();
-    }
-
-    private Session initSession() throws SQLException {
-        DataSource dataSource = createDataSource();
-        return createSession(dataSource);
-    }
-
-    private static DataSource createDataSource() throws SQLException {
-        DataSource dataSource = new JdbcDataSource();
-        dataSource.unwrap(JdbcDataSource.class)
-                .setUrl("jdbc:h2:mem:default;INIT=RUNSCRIPT FROM 'src/test/resources/sql/product.sql'");
-        return dataSource;
-    }
-
-    private static SessionImpl createSession(DataSource dataSource) throws SQLException {
-        return new SessionImpl(dataSource, new H2Dialect());
+    void openSession() {
+        YamlPropertyParser parser = new YamlPropertyParser();
+        sessionFactory = new SessionFactoryImpl(parser, "h2", "session-factory-test-persistence.yml");
+        session = sessionFactory.openSession();
     }
 
     @AfterEach
-    void tearDown(TestInfo testInfo) {
-        if (testInfo.getTags().contains("SkipCleanup")) {
-            return;
-        }
+    void tearDown() {
         session.close();
+        sessionFactory.close();
     }
 
     @Test
     @DisplayName("Entity is updated after commit transaction")
     void commit() {
-        Product expectedProduct = new Product();
-        expectedProduct.id(1L).name("scissors").price(2.0);
+        Person expectedPerson = new Person();
+        expectedPerson.id(1L).name("John").age(42);
 
         session.begin();
-        Product product = session.find(Product.class, 1L).orElseThrow();
-        product.price(2.0);
+        Person person = session.find(Person.class, 1L).orElseThrow();
+        person.age(42);
         session.flush();
         session.commit();
-        session.detach(product);
+        session.detach(person);
 
-        Product foundProduct = session.find(Product.class, 1L).orElseThrow();
-        assertThat(foundProduct).isEqualTo(expectedProduct);
+        Person foundPerson = session.find(Person.class, 1L).orElseThrow();
+        assertThat(foundPerson).isEqualTo(expectedPerson);
     }
 
     @Test
     @DisplayName("Entity is not updated after rollback transaction")
     void rollback() {
-        Product expectedProduct = new Product();
-        expectedProduct.id(1L).name("scissors").price(1.0);
+        Person expectedPerson = new Person();
+        expectedPerson.id(2L).name("Bilbo").age(129);
 
         session.begin();
-        Product product = session.find(Product.class, 1L).orElseThrow();
-        product.price(2.0);
+        Person person = session.find(Person.class, 2L).orElseThrow();
+        person.age(100);
         session.flush();
         session.rollback();
-        session.detach(product);
+        session.detach(person);
 
-        Product foundProduct = session.find(Product.class, 1L).orElseThrow();
-        assertThat(foundProduct)
-                .isEqualTo(expectedProduct)
-                .isNotEqualTo(product);
+        Person foundPerson = session.find(Person.class, 2L).orElseThrow();
+        assertThat(foundPerson)
+                .isEqualTo(expectedPerson)
+                .isNotEqualTo(person);
     }
 
     @Test
     @DisplayName("Entity is not updated when transaction is not committed")
-    void notFinishTransaction() throws SQLException {
+    void notFinishTransaction() {
         session.begin();
-        Product product = session.find(Product.class, 1L).orElseThrow();
-        product.price(2.0);
+        Person person = session.find(Person.class, 1L).orElseThrow();
+        person.age(333);
         session.flush();
         session.close();
 
-        session = initSession();
-        Product sameProductFromDB = session.find(Product.class, 1L).orElseThrow();
-        assertThat(product.price()).isNotEqualTo(sameProductFromDB.price());
+        session = sessionFactory.openSession();
+        Person samePersonFromDB = session.find(Person.class, 1L).orElseThrow();
+        assertThat(person.age()).isNotEqualTo(samePersonFromDB.age());
     }
 }
