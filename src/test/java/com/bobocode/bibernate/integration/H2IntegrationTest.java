@@ -1,22 +1,23 @@
 package com.bobocode.bibernate.integration;
 
-import com.bobocode.bibernate.H2Dialect;
 import com.bobocode.bibernate.integration.entity.Product;
 import com.bobocode.bibernate.session.Session;
-import com.bobocode.bibernate.session.SessionImpl;
+import com.bobocode.bibernate.session.SessionFactoryImpl;
 import com.bobocode.bibernate.session.entity.EntityClass;
 import com.bobocode.bibernate.session.entity.NotEntityClass;
+import com.bobocode.parser.YamlPropertyParser;
 import org.assertj.core.api.ThrowableAssert;
-import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.TestMethodOrder;
 
-import javax.sql.DataSource;
-import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,25 +26,17 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class H2IntegrationTest {
 
     private Session session;
+    private SessionFactoryImpl sessionFactory;
 
     @BeforeEach
-    void setUp() throws SQLException {
-        DataSource dataSource = createDataSource();
-        session = createSession(dataSource);
-    }
-
-    private static DataSource createDataSource() throws SQLException {
-        DataSource dataSource = new JdbcDataSource();
-        dataSource.unwrap(JdbcDataSource.class)
-                .setUrl("jdbc:h2:mem:default;INIT=RUNSCRIPT FROM 'src/test/resources/sql/product.sql'");
-        return dataSource;
-    }
-
-    private static SessionImpl createSession(DataSource dataSource) throws SQLException {
-        return new SessionImpl(dataSource, new H2Dialect());
+    void openSession() {
+        YamlPropertyParser parser = new YamlPropertyParser();
+        sessionFactory = new SessionFactoryImpl(parser, "h2-integration-test");
+        session = sessionFactory.openSession();
     }
 
     @AfterEach
@@ -52,20 +45,23 @@ class H2IntegrationTest {
             return;
         }
         session.close();
+        sessionFactory.close();
     }
 
     @Test
     @DisplayName("Gets record by ID")
+    @Order(6)
     void getRecordById() {
         Product expectedProduct = new Product();
-        expectedProduct.id(1L).name("scissors").price(1.0);
+        expectedProduct.id(3L).name("knife").price(5.0);
 
-        Optional<Product> product = session.find(Product.class, 1L);
+        Optional<Product> product = session.find(Product.class, 3L);
 
         assertThat(product).isPresent().contains(expectedProduct);
     }
 
     @Test
+    @Order(1)
     @DisplayName("Gets cached record by ID")
     void getCachedRecordById() {
         Product expectedProduct = new Product();
@@ -78,13 +74,15 @@ class H2IntegrationTest {
     }
 
     @Test
+    @Order(8)
     @DisplayName("Gets empty record by non-existing ID")
     void getEmptyRecordById() {
-        Optional<Product> product = session.find(Product.class, 10L);
+        Optional<Product> product = session.find(Product.class, 1000L);
         assertThat(product).isEmpty();
     }
 
     @Test
+    @Order(3)
     @DisplayName("Gets record by ID and properties")
     void getAllRecordsByIdAndProperties() {
         Map<String, Object> properties = new HashMap<>();
@@ -99,6 +97,7 @@ class H2IntegrationTest {
     }
 
     @Test
+    @Order(2)
     @DisplayName("Gets all records bounded by limit and offset")
     void getAllRecordsByIdWithLimitAndOffset() {
         List<Product> expectedProducts = List.of(
@@ -112,9 +111,10 @@ class H2IntegrationTest {
     }
 
     @Test
+    @Order(9)
     @DisplayName("Calls update on entity which fields were actually updated during the session")
     void callsUpdateOnUpdatedEntity() {
-        Optional<Product> product = session.find(Product.class, 1L);
+        Optional<Product> product = session.find(Product.class, 3L);
         Product updatableProduct = product.orElseThrow();
         String newProductName = "new product name";
         updatableProduct.name(newProductName);
@@ -129,8 +129,9 @@ class H2IntegrationTest {
     }
 
     @Test
+    @Order(11)
     void delete() {
-        Optional<Product> product = session.find(Product.class, 1L);
+        Optional<Product> product = session.find(Product.class, 2L);
         Product productToDelete = product.orElseThrow();
 
         session.delete(productToDelete);
@@ -144,6 +145,7 @@ class H2IntegrationTest {
     }
 
     @Test
+    @Order(5)
     void merge() {
         Product foundProduct = session.find(Product.class, 1L).orElseThrow();
         session.detach(foundProduct);
@@ -157,16 +159,19 @@ class H2IntegrationTest {
     }
 
     @Test
+    @Order(10)
     void detach() {
-        Product foundProduct = session.find(Product.class, 1L).orElseThrow();
+        Product foundProduct = session.find(Product.class, 2L).orElseThrow();
         assertThat(session.contains(foundProduct)).isTrue();
         session.detach(foundProduct);
         assertThat(session.contains(foundProduct)).isFalse();
     }
 
+    @Disabled
     @Test
+    @Order(4)
     void save() {
-        Product product = new Product().id(10L).name("product name");
+        Product product = new Product().id(100L).name("product name");
 
         boolean cached = session.contains(product);
         assertThat(cached).isFalse();
@@ -179,10 +184,11 @@ class H2IntegrationTest {
     }
 
     @Test
+    @Order(7)
     void updateOperations() {
         Product foundProduct = session.find(Product.class, 1L).orElseThrow();
         session.delete(foundProduct);
-        Product newProduct = new Product().id(10L).name("product name");
+        Product newProduct = new Product().id(200L).name("product name");
         foundProduct.price(21.2);
         session.save(newProduct);
         session.flush();
@@ -192,6 +198,7 @@ class H2IntegrationTest {
     }
 
     @Test
+    @Order(12)
     @Tag("SkipCleanup")
     @DisplayName("Throws IllegalStateException when session is closed")
     void throwsIllegalStateExceptionWhenSessionIsClosed() {
@@ -199,8 +206,8 @@ class H2IntegrationTest {
         EntityClass entity = new EntityClass();
 
         List<ThrowableAssert.ThrowingCallable> allMethods = List.of(
-                () -> session.find(NotEntityClass.class, 1L),
-                () -> session.findAll(NotEntityClass.class, 1, 0),
+                () -> session.find(NotEntityClass.class, 3L),
+                () -> session.findAll(NotEntityClass.class, 3, 0),
                 () -> session.findAll(NotEntityClass.class, Map.of("key", "value")),
                 () -> session.contains(entity),
                 () -> session.merge(entity),

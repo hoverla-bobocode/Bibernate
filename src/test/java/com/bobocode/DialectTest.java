@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.bobocode.bibernate.Dialect.prepareWhereClause;
+import static com.bobocode.bibernate.configuration.Dialect.prepareWhereClause;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class DialectTest {
