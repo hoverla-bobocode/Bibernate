@@ -1,5 +1,6 @@
 package com.bobocode.bibernate.integration;
 
+import com.bobocode.bibernate.exception.QueryHelperException;
 import com.bobocode.bibernate.integration.entity.Product;
 import com.bobocode.bibernate.session.Session;
 import com.bobocode.bibernate.session.SessionFactory;
@@ -15,6 +16,7 @@ import java.util.Optional;
 import static com.bobocode.bibernate.QueryHelper.runWithinTx;
 import static com.bobocode.bibernate.QueryHelper.runWithinTxReturning;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -72,4 +74,17 @@ class QueryHelperIntegrationTest extends BaseH2Integration {
         assertThat(updatedProduct.get().price()).isEqualTo(2.0);
 
     }
+
+    @Test
+    // todo: remove this line later
+    @Tag("SkipCleanup")
+    void throwsQueryHelperException() {
+        // todo: remove this line later
+        when(sessionFactory.createSession()).thenReturn(session);
+
+        assertThatThrownBy(() -> runWithinTxReturning(sessionFactory,
+                (session) -> session.find(String.class, 1L)))
+                .isInstanceOf(QueryHelperException.class);
+    }
+
 }
