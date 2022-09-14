@@ -20,17 +20,16 @@ public class QueryHelper {
     }
 
     public static <T> T runWithinTxReturning(SessionFactory sessionFactory, Function<Session, T> action) {
-        Session session = sessionFactory.createSession();
-        session.begin();
-        try {
-            T result = action.apply(session);
-            session.commit();
-            return result;
-        } catch (Exception e) {
-            session.rollback();
-            throw new QueryHelperException("Transaction is rolled back", e);
-        } finally {
-            session.close();
+        try (Session session = sessionFactory.openSession()) {
+            session.begin();
+            try {
+                T result = action.apply(session);
+                session.commit();
+                return result;
+            } catch (Exception e) {
+                session.rollback();
+                throw new QueryHelperException("Transaction is rolled back", e);
+            }
         }
     }
 }

@@ -1,7 +1,8 @@
-package com.bobocode.bibernate;
+package com.bobocode.bibernate.configuration.dialects;
 
-public class H2Dialect implements Dialect {
+import com.bobocode.bibernate.configuration.Dialect;
 
+public class PostgreSQLDialect implements Dialect {
     @Override
     public String getLimitClause(int limit, int offset) {
         return offset == 0 ? getLimitClause(limit) : " limit ? offset ?";

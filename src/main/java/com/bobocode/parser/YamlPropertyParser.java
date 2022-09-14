@@ -1,5 +1,6 @@
 package com.bobocode.parser;
 
+import com.bobocode.bibernate.configuration.PersistenceUnitProperties;
 import com.bobocode.exception.PersistenceFileNotFoundException;
 import com.bobocode.exception.PersistenceUnitNotFoundException;
 import lombok.extern.slf4j.Slf4j;
@@ -78,7 +79,7 @@ public class YamlPropertyParser implements PropertyParser {
                     });
         }
         String propertyName = propertyNamePrefix.contains(currentProperty.getKey()) ? propertyNamePrefix :
-                propertyNamePrefix + ".";
+                              propertyNamePrefix + ".";
         String propertyValue = mapObjectTo(currentProperty.getValue(), String.class);
 
         log.trace("Found property: {}={}", propertyName, propertyValue);
@@ -106,5 +107,9 @@ public class YamlPropertyParser implements PropertyParser {
         log.info("Persistence file {} was found", resourceName);
 
         return propertyFile;
+    }
+
+    public static PersistenceUnitProperties toPersistenceUnitProperties(Map<String, String> properties) {
+        return new PersistenceUnitProperties(properties);
     }
 }

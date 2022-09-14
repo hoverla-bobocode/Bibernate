@@ -4,7 +4,7 @@ import com.bobocode.bibernate.EntityPersister;
 import com.bobocode.bibernate.PersistenceContext;
 import com.bobocode.bibernate.Util;
 
-import static com.bobocode.bibernate.Dialect.*;
+import static com.bobocode.bibernate.configuration.Dialect.DELETE_QUERY;
 
 
 public class DeleteAction extends AbstractAction {

@@ -1,12 +1,23 @@
 package com.bobocode.bibernate.integration;
 
 import com.bobocode.bibernate.integration.entity.Product;
+import com.bobocode.bibernate.session.Session;
+import com.bobocode.bibernate.session.SessionFactoryImpl;
 import com.bobocode.bibernate.session.entity.EntityClass;
 import com.bobocode.bibernate.session.entity.NotEntityClass;
+import com.bobocode.parser.YamlPropertyParser;
 import org.assertj.core.api.ThrowableAssert;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.TestMethodOrder;
 
 import java.util.HashMap;
 import java.util.List;
@@ -16,15 +27,16 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class H2IntegrationTest extends BaseH2Integration {
 
     @Test
     @DisplayName("Gets record by ID")
     void getRecordById() {
         Product expectedProduct = new Product();
-        expectedProduct.id(1L).name("scissors").price(1.0);
+        expectedProduct.id(3L).name("knife").price(5.0);
 
-        Optional<Product> product = session.find(Product.class, 1L);
+        Optional<Product> product = session.find(Product.class, 3L);
 
         assertThat(product).isPresent().contains(expectedProduct);
     }
@@ -44,7 +56,7 @@ class H2IntegrationTest extends BaseH2Integration {
     @Test
     @DisplayName("Gets empty record by non-existing ID")
     void getEmptyRecordById() {
-        Optional<Product> product = session.find(Product.class, 10L);
+        Optional<Product> product = session.find(Product.class, 1000L);
         assertThat(product).isEmpty();
     }
 
@@ -78,7 +90,7 @@ class H2IntegrationTest extends BaseH2Integration {
     @Test
     @DisplayName("Calls update on entity which fields were actually updated during the session")
     void callsUpdateOnUpdatedEntity() {
-        Optional<Product> product = session.find(Product.class, 1L);
+        Optional<Product> product = session.find(Product.class, 3L);
         Product updatableProduct = product.orElseThrow();
         String newProductName = "new product name";
         updatableProduct.name(newProductName);
@@ -94,7 +106,7 @@ class H2IntegrationTest extends BaseH2Integration {
 
     @Test
     void delete() {
-        Optional<Product> product = session.find(Product.class, 1L);
+        Optional<Product> product = session.find(Product.class, 2L);
         Product productToDelete = product.orElseThrow();
 
         session.delete(productToDelete);
@@ -122,7 +134,7 @@ class H2IntegrationTest extends BaseH2Integration {
 
     @Test
     void detach() {
-        Product foundProduct = session.find(Product.class, 1L).orElseThrow();
+        Product foundProduct = session.find(Product.class, 2L).orElseThrow();
         assertThat(session.contains(foundProduct)).isTrue();
         session.detach(foundProduct);
         assertThat(session.contains(foundProduct)).isFalse();
@@ -130,7 +142,7 @@ class H2IntegrationTest extends BaseH2Integration {
 
     @Test
     void save() {
-        Product product = new Product().id(10L).name("product name");
+        Product product = new Product().id(100L).name("product name");
 
         boolean cached = session.contains(product);
         assertThat(cached).isFalse();
@@ -146,7 +158,7 @@ class H2IntegrationTest extends BaseH2Integration {
     void updateOperations() {
         Product foundProduct = session.find(Product.class, 1L).orElseThrow();
         session.delete(foundProduct);
-        Product newProduct = new Product().id(10L).name("product name");
+        Product newProduct = new Product().id(200L).name("product name");
         foundProduct.price(21.2);
         session.save(newProduct);
         session.flush();
@@ -163,8 +175,8 @@ class H2IntegrationTest extends BaseH2Integration {
         EntityClass entity = new EntityClass();
 
         List<ThrowableAssert.ThrowingCallable> allMethods = List.of(
-                () -> session.find(NotEntityClass.class, 1L),
-                () -> session.findAll(NotEntityClass.class, 1, 0),
+                () -> session.find(NotEntityClass.class, 3L),
+                () -> session.findAll(NotEntityClass.class, 3, 0),
                 () -> session.findAll(NotEntityClass.class, Map.of("key", "value")),
                 () -> session.contains(entity),
                 () -> session.merge(entity),

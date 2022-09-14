@@ -8,14 +8,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static com.bobocode.bibernate.Dialect.UPDATE_TEMPLATE;
-import static com.bobocode.bibernate.Dialect.prepareSetClause;
-import static com.bobocode.bibernate.Dialect.prepareWhereClause;
+import static com.bobocode.bibernate.configuration.Dialect.UPDATE_TEMPLATE;
+import static com.bobocode.bibernate.configuration.Dialect.prepareSetClause;
+import static com.bobocode.bibernate.configuration.Dialect.prepareWhereClause;
 
 public class UpdateAction extends AbstractAction {
 
     private final EntityPersister entityPersister;
     private final Map<String, Object> updatedColumns;
+
     public UpdateAction(EntityPersister entityPersister, Object entity, Map<String, Object> updatedColumns) {
         super(entity);
         this.entityPersister = entityPersister;

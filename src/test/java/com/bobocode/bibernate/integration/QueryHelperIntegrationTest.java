@@ -21,23 +21,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class QueryHelperIntegrationTest extends BaseH2Integration {
-    @Mock
-    private SessionFactory sessionFactory;
-
-    // todo: remove this method later
-    @Override
-    @BeforeEach
-    protected void setUp() throws SQLException {
-        super.setUp();
-        sessionFactory = mock(SessionFactoryImpl.class);
-    }
 
     @Test
-    // todo: remove this line later
-    @Tag("SkipCleanup")
     void findById() {
-        // todo: remove this line later
-        when(sessionFactory.createSession()).thenReturn(session);
 
         Product expectedProduct = new Product();
         expectedProduct.id(1L).name("scissors").price(1.0);
@@ -48,14 +34,7 @@ class QueryHelperIntegrationTest extends BaseH2Integration {
     }
 
     @Test
-    // todo: remove this later
-    @Tag("SkipCleanup")
     void updateData() throws SQLException {
-        // todo: remove this line later (session factory should return new session instance)
-        when(sessionFactory.createSession()).thenReturn(session);
-        // todo: remove this later
-        Session session1 = initSession();
-
         runWithinTx(sessionFactory,
                 (session) -> {
                     Product foundProduct = session.find(Product.class, 1L).orElseThrow();
@@ -63,9 +42,6 @@ class QueryHelperIntegrationTest extends BaseH2Integration {
                     session.flush();
                 });
 
-
-        // todo: remove this later
-        when(sessionFactory.createSession()).thenReturn(session1);
 
         Optional<Product> updatedProduct = runWithinTxReturning(sessionFactory,
                 (session_) -> session_.find(Product.class, 1L));
@@ -76,12 +52,7 @@ class QueryHelperIntegrationTest extends BaseH2Integration {
     }
 
     @Test
-    // todo: remove this line later
-    @Tag("SkipCleanup")
     void throwsQueryHelperException() {
-        // todo: remove this line later
-        when(sessionFactory.createSession()).thenReturn(session);
-
         assertThatThrownBy(() -> runWithinTxReturning(sessionFactory,
                 (session) -> session.find(String.class, 1L)))
                 .isInstanceOf(QueryHelperException.class);

@@ -41,7 +41,7 @@ public class EntityPersister {
         } catch (SQLException e) {
             throw new BibernateSQLException("Error parsing data got from DB", e);
         } catch (InstantiationException | IllegalAccessException | NoSuchMethodException |
-                 InvocationTargetException e) {
+                InvocationTargetException e) {
             throw new EntityMappingException("Entity mapping error", e);
         }
     }
