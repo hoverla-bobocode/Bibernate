@@ -251,9 +251,4 @@ public class SessionImpl implements Session {
             throw new IllegalStateException("Session is already closed");
         }
     }
-
-    @Override
-    public void close() {
-        throw new UnsupportedOperationException();
-    }
 }

@@ -12,22 +12,22 @@ public class QueryHelper {
     private QueryHelper() {
     }
 
-    public static void runWithinTx(SessionFactory sessionFactory, Consumer<Session> action){
+    public static void runWithinTx(SessionFactory sessionFactory, Consumer<Session> action) {
         runWithinTxReturning(sessionFactory, session -> {
             action.accept(session);
             return null;
         });
     }
 
-    public static <T> T runWithinTxReturning(SessionFactory sessionFactory, Function<Session, T> sessionConsumer) {
+    public static <T> T runWithinTxReturning(SessionFactory sessionFactory, Function<Session, T> action) {
         Session session = sessionFactory.createSession();
-        session.beginTransaction();
+        session.begin();
         try {
-            T result = sessionConsumer.apply(session);
-            session.commitTransaction();
+            T result = action.apply(session);
+            session.commit();
             return result;
         } catch (Exception e) {
-            session.rollbackTransaction();
+            session.rollback();
             throw new QueryHelperException("Transaction is rolled back", e);
         } finally {
             session.close();

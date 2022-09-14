@@ -1,22 +1,13 @@
 package com.bobocode.bibernate.integration;
 
-import com.bobocode.bibernate.H2Dialect;
 import com.bobocode.bibernate.integration.entity.Product;
-import com.bobocode.bibernate.session.Session;
-import com.bobocode.bibernate.session.SessionImpl;
 import com.bobocode.bibernate.session.entity.EntityClass;
 import com.bobocode.bibernate.session.entity.NotEntityClass;
 import org.assertj.core.api.ThrowableAssert;
-import org.h2.jdbcx.JdbcDataSource;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
 
-import javax.sql.DataSource;
-import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,34 +16,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-class H2IntegrationTest {
-
-    private Session session;
-
-    @BeforeEach
-    void setUp() throws SQLException {
-        DataSource dataSource = createDataSource();
-        session = createSession(dataSource);
-    }
-
-    private static DataSource createDataSource() throws SQLException {
-        DataSource dataSource = new JdbcDataSource();
-        dataSource.unwrap(JdbcDataSource.class)
-                .setUrl("jdbc:h2:mem:default;INIT=RUNSCRIPT FROM 'src/test/resources/sql/product.sql'");
-        return dataSource;
-    }
-
-    private static SessionImpl createSession(DataSource dataSource) throws SQLException {
-        return new SessionImpl(dataSource, new H2Dialect());
-    }
-
-    @AfterEach
-    void tearDown(TestInfo testInfo) {
-        if (testInfo.getTags().contains("SkipCleanup")) {
-            return;
-        }
-        session.close();
-    }
+class H2IntegrationTest extends BaseH2Integration {
 
     @Test
     @DisplayName("Gets record by ID")
