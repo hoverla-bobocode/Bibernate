@@ -1,7 +1,7 @@
 package com.bobocode.bibernate.converter;
 
 /**
- * Class to converting JDBC based types to Java types.
+ * Class for converting JDBC based types to Java types.
  */
 public interface AttributeConverter<T> {
 

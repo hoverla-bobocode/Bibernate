@@ -58,11 +58,12 @@ public class EntityPersister {
         } catch (SQLException e) {
             throw new BibernateSQLException("Error parsing data got from DB", e);
         } catch (InstantiationException | IllegalAccessException | NoSuchMethodException |
-                InvocationTargetException e) {
+                 InvocationTargetException e) {
             throw new EntityMappingException("Entity mapping error", e);
         }
     }
 
+    @SuppressWarnings("java:S3011")
     private <T> List<T> mapResultSetToEntityList(Class<T> type, ResultSet resultSet)
             throws SQLException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
         List<T> resultList = new ArrayList<>();
@@ -72,7 +73,8 @@ public class EntityPersister {
             for (Field field : fields) {
                 String columnName = getColumnName(field);
                 Object value = resultSet.getObject(columnName);
-                convertAndSet(field, obj, value);
+                field.setAccessible(true);
+                field.set(obj, convertToJavaType(field, value));
             }
             resultList.add(obj);
         }
@@ -128,17 +130,14 @@ public class EntityPersister {
         }
     }
 
-    @SuppressWarnings("java:S3011")
-    private void convertAndSet(Field field, Object obj, Object value) throws IllegalAccessException {
+    private Object convertToJavaType(Field field, Object value) throws IllegalAccessException {
         Supplier<AttributeConverter<?>> converterSupplier = CONVERTERS.get(field.getType());
-        field.setAccessible(true);
         if (converterSupplier != null) {
             AttributeConverter<?> converter = converterSupplier.get();
             if (converter.isConvertable(value)) {
-                field.set(obj, converter.convertToEntityAttribute(value));
+                return converter.convertToEntityAttribute(value);
             }
-        } else {
-            field.set(obj, value);
         }
+        return value;
     }
 }

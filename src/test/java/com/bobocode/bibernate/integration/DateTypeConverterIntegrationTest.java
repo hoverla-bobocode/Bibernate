@@ -31,10 +31,7 @@ class DateTypeConverterIntegrationTest {
     }
 
     @AfterEach
-    void tearDown(TestInfo testInfo) {
-        if (testInfo.getTags().contains("SkipCleanup")) {
-            return;
-        }
+    void tearDown() {
         session.close();
         sessionFactory.close();
     }
