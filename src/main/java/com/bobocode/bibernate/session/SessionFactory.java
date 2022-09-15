@@ -8,6 +8,9 @@ public interface SessionFactory {
 
     Session openSession();
 
+    /**
+     * Close exist sessions
+     */
     void close();
 
 }

@@ -1,5 +1,8 @@
 package com.bobocode.bibernate.configuration;
 
+/**
+ * Class that holds property names to read properties from resource files.
+ */
 public enum PropertyValues {
     PERSISTENCE_UNIT_NAME_PROPERTY("persistenceUnit.name"),
     DATA_SOURCE_JDBC_URL_PROPERTY("persistenceUnit.dataSource.jdbcUrl"),

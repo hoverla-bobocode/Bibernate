@@ -13,6 +13,10 @@ import java.util.Arrays;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class Util {
 
+    /**
+     * Returns the name of the table provided as value in {@link Table} annotation
+     * @return {@link String} table name
+     */
     public static <T> String getTableName(Class<T> type) {
         if (type.isAnnotationPresent(Table.class)) {
             return type.getAnnotation(Table.class).value();
@@ -20,6 +24,9 @@ public class Util {
         return type.getSimpleName().toLowerCase();
     }
 
+    /**
+     * Returns the name of the column provided as value in{@link Column} annotation
+     */
     public static String getColumnName(Field field) {
         if (field.isAnnotationPresent(Column.class)) {
             return field.getAnnotation(Column.class).value();
@@ -64,7 +71,7 @@ public class Util {
             if (idField.equals(field)) {
                 continue;
             }
-            setValueToField( Util.getValueFromField(field, entity), cachedField, cachedInstance);
+            setValueToField(Util.getValueFromField(field, entity), cachedField, cachedInstance);
         }
         return cachedInstance;
     }
@@ -72,9 +79,5 @@ public class Util {
     public static Object getIdFieldValue(Object entity) {
         Class<?> entityType = entity.getClass();
         return Util.getValueFromField(getIdField(entityType), entity);
-    }
-
-    public static <T> T cast(Object obj) {
-        return (T) obj;
     }
 }
