@@ -51,7 +51,6 @@ persistenceUnit:
     user: sa
     password: password
   dialect: H2
-logLevel: TRACE
 
 ---
 
