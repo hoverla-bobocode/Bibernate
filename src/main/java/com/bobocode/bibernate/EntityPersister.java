@@ -1,25 +1,42 @@
 package com.bobocode.bibernate;
 
+import static com.bobocode.bibernate.Util.getColumnName;
+
+import com.bobocode.bibernate.converter.AttributeConverter;
+import com.bobocode.bibernate.converter.LocalDateTimeTypeConverter;
+import com.bobocode.bibernate.converter.LocalDateTypeConverter;
+import com.bobocode.bibernate.converter.LocalTimeTypeConverter;
+import com.bobocode.bibernate.converter.ZonedDateTimeTypeConverter;
 import com.bobocode.bibernate.exception.BibernateSQLException;
 import com.bobocode.bibernate.exception.EntityMappingException;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
-
-import static com.bobocode.bibernate.Util.getColumnName;
+import java.util.Map;
+import java.util.function.Supplier;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class EntityPersister {
+
     private final Connection connection;
+
+    private final Map<Class<?>, Supplier<AttributeConverter<?>>> CONVERTERS =
+            Map.of(LocalDate.class, LocalDateTypeConverter::new,
+                    LocalTime.class, LocalTimeTypeConverter::new,
+                    LocalDateTime.class, LocalDateTimeTypeConverter::new,
+                    ZonedDateTime.class, ZonedDateTimeTypeConverter::new);
 
     public <T> List<T> select(Class<T> type, String query, List<Object> columnValuesToFilter) {
         try (PreparedStatement statement = connection.prepareStatement(query)) {
@@ -41,22 +58,23 @@ public class EntityPersister {
         } catch (SQLException e) {
             throw new BibernateSQLException("Error parsing data got from DB", e);
         } catch (InstantiationException | IllegalAccessException | NoSuchMethodException |
-                InvocationTargetException e) {
+                 InvocationTargetException e) {
             throw new EntityMappingException("Entity mapping error", e);
         }
     }
 
     @SuppressWarnings("java:S3011")
-    private static <T> List<T> mapResultSetToEntityList(Class<T> type, ResultSet resultSet)
+    private <T> List<T> mapResultSetToEntityList(Class<T> type, ResultSet resultSet)
             throws SQLException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
         List<T> resultList = new ArrayList<>();
         while (resultSet.next()) {
             T obj = type.getConstructor().newInstance();
             Field[] fields = type.getDeclaredFields();
             for (Field field : fields) {
-                field.setAccessible(true);
                 String columnName = getColumnName(field);
-                field.set(obj, resultSet.getObject(columnName));
+                Object value = resultSet.getObject(columnName);
+                field.setAccessible(true);
+                field.set(obj, convertToJavaType(field, value));
             }
             resultList.add(obj);
         }
@@ -68,6 +86,7 @@ public class EntityPersister {
             for (int i = 0; i < valuesToInsert.size(); i++) {
                 statement.setObject(i + 1, valuesToInsert.get(i));
             }
+            System.out.println(statement);
             log.trace(statement.toString());
             statement.executeUpdate();
         } catch (SQLException e) {
@@ -96,8 +115,8 @@ public class EntityPersister {
     }
 
     private static void setValuesForUpdateStatement(List<Object> updatedColumValues,
-                                                    List<Object> columnsValuesToFilter,
-                                                    PreparedStatement statement) throws SQLException {
+            List<Object> columnsValuesToFilter,
+            PreparedStatement statement) throws SQLException {
         int i = 0;
         while (i < updatedColumValues.size()) {
             statement.setObject(i + 1, updatedColumValues.get(i));
@@ -109,5 +128,16 @@ public class EntityPersister {
             i++;
             j++;
         }
+    }
+
+    private Object convertToJavaType(Field field, Object value) throws IllegalAccessException {
+        Supplier<AttributeConverter<?>> converterSupplier = CONVERTERS.get(field.getType());
+        if (converterSupplier != null) {
+            AttributeConverter<?> converter = converterSupplier.get();
+            if (converter.isConvertable(value)) {
+                return converter.convertToEntityAttribute(value);
+            }
+        }
+        return value;
     }
 }
