@@ -43,8 +43,8 @@ public class QueryHelper {
      */
     public static <T> T runWithinTxReturning(SessionFactory sessionFactory, Function<Session, T> action) {
         try (Session session = sessionFactory.openSession()) {
-            session.begin();
             try {
+                session.begin();
                 T result = action.apply(session);
                 session.commit();
                 return result;
