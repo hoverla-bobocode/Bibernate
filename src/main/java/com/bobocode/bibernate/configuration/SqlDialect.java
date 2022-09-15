@@ -21,12 +21,19 @@ public enum SqlDialect {
         this.driverClassName = driverClassName;
     }
 
+    /**
+     * Retrieves an instance of corresponding implementation of {@link Dialect}
+     * @return {@link Dialect} corresponding to enums name
+     */
     public Dialect getInstance() {
         return instance;
     }
 
+    /**
+     * Retrieves class name of corresponding sql driver
+     * @return {@link String} - name of driver class
+     */
     public String getDriverClassName() {
         return driverClassName;
     }
-
 }

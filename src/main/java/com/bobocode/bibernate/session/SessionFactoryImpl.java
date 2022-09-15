@@ -11,10 +11,11 @@ import javax.sql.DataSource;
 import java.sql.SQLException;
 import java.util.Objects;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 
 import static com.bobocode.parser.YamlPropertyParser.toPersistenceUnitProperties;
 
-
+@Slf4j
 public class SessionFactoryImpl implements SessionFactory {
 
     private final DataSource dataSource;
@@ -38,6 +39,7 @@ public class SessionFactoryImpl implements SessionFactory {
 
     public Session openSession() {
         try {
+            log.info("Creating session...");
             return new SessionImpl(dataSource, dialect);
         } catch (SQLException e) {
             throw new BibernateException("Connection problem: %s", e);
@@ -50,6 +52,7 @@ public class SessionFactoryImpl implements SessionFactory {
         try {
             unwrap = dataSource.unwrap(HikariDataSource.class);
             unwrap.close();
+            log.info("Session closed.");
         } catch (SQLException e) {
             throw new BibernateException("Error during closing connections. ", e);
         }
@@ -59,7 +62,8 @@ public class SessionFactoryImpl implements SessionFactory {
         return PooledDataSourceProvider.providePooledDatasource(properties);
     }
 
-    private PersistenceUnitProperties getPersistenceUnitProperties(PropertyParser parser, String persistenceUnit, String propertyFile) {
+    private PersistenceUnitProperties getPersistenceUnitProperties(PropertyParser parser, String persistenceUnit,
+            String propertyFile) {
         return toPersistenceUnitProperties(Optional.ofNullable(propertyFile)
                 .map(file -> parser.readPropertiesForPersistenceUnit(file, persistenceUnit))
                 .orElseGet(() -> parser.readPropertiesForPersistenceUnit(persistenceUnit)));

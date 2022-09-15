@@ -10,6 +10,9 @@ public interface SessionFactory {
 
     Session openSession() throws SQLException;
 
+    /**
+     * Close exist sessions
+     */
     void close();
 
 }
