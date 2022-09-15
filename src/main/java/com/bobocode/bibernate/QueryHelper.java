@@ -16,8 +16,10 @@ public class QueryHelper {
     }
 
     /**
-     * Creates a new session using the provided session factory and performs the passed action within the session scope.
-     * Provided logic is run within transaction scope, which will be either committed or rollback (in case exception happens).
+     * Creates a new session using the provided session factory {@link SessionFactory} and performs the passed action
+     * within the session scope (see {@link Session}).
+     * Provided logic is run within transaction scope (see {@link com.bobocode.bibernate.transaction.Transaction}),
+     * which will be either committed or rollback (in case exception happens).
      * @param sessionFactory factory that creates session
      * @param action consumer that accepts session and perform logic
      */
@@ -29,8 +31,11 @@ public class QueryHelper {
     }
 
     /**
-     * Creates a new session using the provided session factory and performs the passed action within the session scope.
-     * Provided logic is run within transaction scope, which will be either committed or rollback (in case exception happens).
+     * Creates a new session using the provided session factory {@link SessionFactory} and performs the passed action
+     * within the session scope (see {@link Session}).
+     * Provided logic is run within transaction scope (see {@link com.bobocode.bibernate.transaction.Transaction}),
+     * which will be either committed or rollback (in case exception happens).
+     * The result of action performing is returned.
      * @param sessionFactory factory that creates session
      * @param action function that accepts session, perform logic and return result
      * @return result of action performing
