@@ -9,7 +9,7 @@ import lombok.experimental.UtilityClass;
 import javax.sql.DataSource;
 
 /**
- * Provider provides pooled {@link HikariDataSource} based on provided properties of persistence-unit
+ * Provides pooled {@link HikariDataSource} based on provided properties of persistence-unit
  */
 @UtilityClass
 public class PooledDataSourceProvider {

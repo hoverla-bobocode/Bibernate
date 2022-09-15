@@ -17,6 +17,15 @@ import java.util.Optional;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class Validator {
 
+    /**
+     * Validates entity.
+     * <br>
+     * Entity is valid if:
+     * <br>
+     * ** entity marked by {@link Entity} annotation
+     * <br>
+     * ** entity has id field marked by {@link Id} annotation
+     */
     public static <T> void validateEntity(Class<T> type) {
         log.info("Validation of entity %s".formatted(type.getName()));
         List<String> messages = new ArrayList<>();
@@ -26,6 +35,27 @@ public class Validator {
         if (!messages.isEmpty()) {
             messages.forEach(log::error);
             throw new EntityMappingException(String.join("\n", messages));
+        }
+    }
+
+    /**
+     * Validates primary key of entity.
+     * <br>
+     * Primary key is valid if it is marked by {@link Id} annotation
+     */
+    public static <T> void checkIdValidPrimaryKeyType(Class<T> type, Object primaryKey) {
+        Optional<Field> primaryKeyField = Arrays.stream(type.getDeclaredFields())
+                .filter(field -> field.isAnnotationPresent(Id.class))
+                .findAny();
+        if (primaryKeyField.isPresent() && !primaryKeyField.get().getType().isAssignableFrom(primaryKey.getClass())) {
+            throw new IllegalArgumentException(
+                    "[primaryKey] argument has not valid type for entity type %s".formatted(type.getName()));
+        }
+    }
+
+    public static void checkNotNegativeNumber(long num, String message) {
+        if (num < 0) {
+            throw new IllegalArgumentException(message);
         }
     }
 
@@ -42,21 +72,6 @@ public class Validator {
 
         if (primaryKeyFieldOptional.isEmpty()) {
             messages.add("Entity class must have field annotated with @Id");
-        }
-    }
-
-    public static <T> void checkIdValidPrimaryKeyType(Class<T> type, Object primaryKey) {
-        Optional<Field> primaryKeyField = Arrays.stream(type.getDeclaredFields())
-                .filter(field -> field.isAnnotationPresent(Id.class))
-                .findAny();
-        if (primaryKeyField.isPresent() && !primaryKeyField.get().getType().isAssignableFrom(primaryKey.getClass())) {
-            throw new IllegalArgumentException("[primaryKey] argument has not valid type for entity type %s".formatted(type.getName()));
-        }
-    }
-
-    public static void checkNotNegativeNumber(long num, String message) {
-        if (num < 0) {
-            throw new IllegalArgumentException(message);
         }
     }
 }

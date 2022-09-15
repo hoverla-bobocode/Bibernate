@@ -1,5 +1,8 @@
 package com.bobocode.bibernate.action;
 
+/**
+ * Represents {@link Action} priority
+ */
 public enum ActionPriority {
     INSERT_PRIORITY(1),
     UPDATE_PRIORITY(2),

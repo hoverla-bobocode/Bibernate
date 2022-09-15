@@ -3,7 +3,11 @@ package com.bobocode.bibernate.configuration;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * This is a basic interface for implementation by each dialect.
+ */
 public interface Dialect {
+
     String SELECT_ALL_TEMPLATE = "select * from %s";
     String SELECT_ALL_ID_TEMPLATE = "select * from %s where id = ?";
     String SELECT_ALL_BY_PROPERTIES_TEMPLATE = "select * from %s where %s";

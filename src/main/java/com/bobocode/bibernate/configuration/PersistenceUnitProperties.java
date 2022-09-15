@@ -21,6 +21,9 @@ import static com.bobocode.bibernate.configuration.PropertyValues.DIALECT_PROPER
 import static com.bobocode.bibernate.configuration.PropertyValues.LOG_LEVEL_PROPERTY;
 import static com.bobocode.bibernate.configuration.PropertyValues.PERSISTENCE_UNIT_NAME_PROPERTY;
 
+/**
+ * PersistenceUnitProperties store properties for Bibernate.
+ */
 @Getter
 @Slf4j
 public class PersistenceUnitProperties {
@@ -33,6 +36,13 @@ public class PersistenceUnitProperties {
     private String password;
     private Level logLevel;
 
+    /**
+     * Reads and sets properties such as: persistenceUnitName; jdbcUrl, userName and password which are base for connection to
+     * database; if dialect name is not provided then resolve it from connection metadata if logLevel is not provided then sets it
+     * Level.DEBUG as default
+     * @param properties            map of properties
+     * @throws BibernateException   if some required property is invalid
+     */
     public PersistenceUnitProperties(Map<String, String> properties) {
         readPersistenceUnitName(properties);
         readDataSourceMetaData(properties);

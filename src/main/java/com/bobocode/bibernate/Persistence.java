@@ -1,12 +1,31 @@
 package com.bobocode.bibernate;
 
-// TODO: remove this suppresses and uncomment the code during implementation. The code is commented to avoid coverage check
-@SuppressWarnings({"java:S125", "java:S2094"})
+import com.bobocode.bibernate.session.SessionFactory;
+import com.bobocode.bibernate.session.SessionFactoryImpl;
+import com.bobocode.parser.YamlPropertyParser;
+import lombok.experimental.UtilityClass;
+
+/**
+ * Starting point to create {@link SessionFactory session factory}
+ */
+@UtilityClass
 public class Persistence {
 
-//    private Persistence() {}
-//
-//    public static SessionFactory createSessionFactory(String persistenceUnitName) {
-//        return null;
-//    }
+    /**
+     * @param persistenceUnitName persistence unit name from which configuration properties should be taken. By default,
+     * searches for persistence.yml.
+     */
+    public SessionFactory createSessionFactory(String persistenceUnitName) {
+        YamlPropertyParser yamlPropertyParser = new YamlPropertyParser();
+        return new SessionFactoryImpl(yamlPropertyParser, persistenceUnitName);
+    }
+
+    /**
+     * @param persistenceFileName persistence file name from which configuration properties should be taken.
+     * @param persistenceUnitName persistence unit name from which configuration properties should be taken.
+     */
+    public SessionFactory createSessionFactory(String persistenceFileName, String persistenceUnitName) {
+        YamlPropertyParser yamlPropertyParser = new YamlPropertyParser();
+        return new SessionFactoryImpl(yamlPropertyParser, persistenceUnitName, persistenceFileName);
+    }
 }
