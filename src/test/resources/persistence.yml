@@ -51,3 +51,13 @@ persistenceUnit:
     user: sa
     password: password
   dialect: H2
+
+---
+
+persistenceUnit:
+  name: h2-transaction-integration-test
+  dataSource:
+    jdbcUrl: jdbc:h2:mem:default;INIT=RUNSCRIPT FROM 'src/test/resources/sql/person.sql';DB_CLOSE_DELAY=0
+    user: sa
+    password: password
+  dialect: H2

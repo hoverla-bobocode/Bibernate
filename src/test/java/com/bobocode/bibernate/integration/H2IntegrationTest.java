@@ -1,22 +1,12 @@
 package com.bobocode.bibernate.integration;
 
 import com.bobocode.bibernate.integration.entity.Product;
-import com.bobocode.bibernate.session.Session;
-import com.bobocode.bibernate.session.SessionFactoryImpl;
 import com.bobocode.bibernate.session.entity.EntityClass;
 import com.bobocode.bibernate.session.entity.NotEntityClass;
-import com.bobocode.parser.YamlPropertyParser;
 import org.assertj.core.api.ThrowableAssert;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
-import org.junit.jupiter.api.TestMethodOrder;
 
 import java.util.HashMap;
 import java.util.List;
@@ -26,31 +16,10 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class H2IntegrationTest {
-
-    private Session session;
-    private SessionFactoryImpl sessionFactory;
-
-    @BeforeEach
-    void openSession() {
-        YamlPropertyParser parser = new YamlPropertyParser();
-        sessionFactory = new SessionFactoryImpl(parser, "h2-integration-test");
-        session = sessionFactory.openSession();
-    }
-
-    @AfterEach
-    void tearDown(TestInfo testInfo) {
-        if (testInfo.getTags().contains("SkipCleanup")) {
-            return;
-        }
-        session.close();
-        sessionFactory.close();
-    }
+class H2IntegrationTest extends BaseH2Integration {
 
     @Test
     @DisplayName("Gets record by ID")
-    @Order(6)
     void getRecordById() {
         Product expectedProduct = new Product();
         expectedProduct.id(3L).name("knife").price(5.0);
@@ -61,7 +30,6 @@ class H2IntegrationTest {
     }
 
     @Test
-    @Order(1)
     @DisplayName("Gets cached record by ID")
     void getCachedRecordById() {
         Product expectedProduct = new Product();
@@ -74,7 +42,6 @@ class H2IntegrationTest {
     }
 
     @Test
-    @Order(8)
     @DisplayName("Gets empty record by non-existing ID")
     void getEmptyRecordById() {
         Optional<Product> product = session.find(Product.class, 1000L);
@@ -82,7 +49,6 @@ class H2IntegrationTest {
     }
 
     @Test
-    @Order(3)
     @DisplayName("Gets record by ID and properties")
     void getAllRecordsByIdAndProperties() {
         Map<String, Object> properties = new HashMap<>();
@@ -97,7 +63,6 @@ class H2IntegrationTest {
     }
 
     @Test
-    @Order(2)
     @DisplayName("Gets all records bounded by limit and offset")
     void getAllRecordsByIdWithLimitAndOffset() {
         List<Product> expectedProducts = List.of(
@@ -111,7 +76,6 @@ class H2IntegrationTest {
     }
 
     @Test
-    @Order(9)
     @DisplayName("Calls update on entity which fields were actually updated during the session")
     void callsUpdateOnUpdatedEntity() {
         Optional<Product> product = session.find(Product.class, 3L);
@@ -129,7 +93,6 @@ class H2IntegrationTest {
     }
 
     @Test
-    @Order(11)
     void delete() {
         Optional<Product> product = session.find(Product.class, 2L);
         Product productToDelete = product.orElseThrow();
@@ -145,7 +108,6 @@ class H2IntegrationTest {
     }
 
     @Test
-    @Order(5)
     void merge() {
         Product foundProduct = session.find(Product.class, 1L).orElseThrow();
         session.detach(foundProduct);
@@ -159,7 +121,6 @@ class H2IntegrationTest {
     }
 
     @Test
-    @Order(10)
     void detach() {
         Product foundProduct = session.find(Product.class, 2L).orElseThrow();
         assertThat(session.contains(foundProduct)).isTrue();
@@ -167,9 +128,7 @@ class H2IntegrationTest {
         assertThat(session.contains(foundProduct)).isFalse();
     }
 
-    @Disabled
     @Test
-    @Order(4)
     void save() {
         Product product = new Product().id(100L).name("product name");
 
@@ -184,7 +143,6 @@ class H2IntegrationTest {
     }
 
     @Test
-    @Order(7)
     void updateOperations() {
         Product foundProduct = session.find(Product.class, 1L).orElseThrow();
         session.delete(foundProduct);
@@ -198,7 +156,6 @@ class H2IntegrationTest {
     }
 
     @Test
-    @Order(12)
     @Tag("SkipCleanup")
     @DisplayName("Throws IllegalStateException when session is closed")
     void throwsIllegalStateExceptionWhenSessionIsClosed() {
@@ -224,5 +181,7 @@ class H2IntegrationTest {
         allMethods.forEach(method -> assertThatThrownBy(method)
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("Session is already closed"));
+
+        sessionFactory.close();
     }
 }
