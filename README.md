@@ -19,7 +19,7 @@ To install Bibernate locally in your project you should:
 * clone repo ```https://github.com/hoverla-bobocode/Bibernate.git```
 * go to the root of Bring project ```cd <path_to_bring>/Bibernate```
 * build jar with ```mvn clean install -DskipTests```
-* add jar to your maven project
+* add jar to your maven project:
 
 ```
 <dependency>
@@ -170,8 +170,6 @@ operations for each Session. It can rather perform commit or rollback operations
 ### What is a persistence unit
 
 ---
-[What is persistence unit, what does it stand for.
-How to describe persistence units with .yml file]
 A persistence unit defines a set of all `Entity` classes that are managed
 by `Session` instances in an application.
 This set of entity classes represents the data contained within a single data
@@ -192,15 +190,6 @@ persistenceUnit:
 ### What is an entity
 
 ---
-[
-
-* ~~What is entity, how to define it~~.
-* ~~Necessary annotations (@Entity, @Id, @Table)~~
-* & methods (constructor, maybe getters, setters).
-* relations mapping ??
-* ~~Entity states (transient, persisted, detached, removed)~~
-* how to get entity in specific state ??
-* ]
 
 Entity is a class that represents table in the database. Each entity instance corresponds to a row in that table.
 Entity fields or properties represent columns of the related table.
@@ -259,6 +248,13 @@ detached or deleted state.
 * Removed entity is an object that was being persistent entity and now this has been passed to the session’s `remove()`
   method.
 
-[Session methods (maybe use some table: method name - description)]
+
+## Supported Date types:
+| Java type     | JDBC type       |
+|---------------|-----------------|
+| LocalDate     | Date            |
+| LocalDateTime | Timestamp       |
+| LocalTime     | Timestamp       |
+| ZonedDateTime | Zoned Timestamp |
 
 
