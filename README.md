@@ -11,22 +11,52 @@ database in object-oriented manner</b>
 
 ---
 
+## Quick Start
+
+---
+To install Bibernate locally in your project you should:
+
+* clone repo ```https://github.com/hoverla-bobocode/Bibernate.git```
+* go to the root of Bring project ```cd <path_to_bring>/Bibernate```
+* build jar with ```mvn clean install -DskipTests```
+* add jar to your maven project
+
+```
+<dependency>
+    <groupId>com.bobocode.hoverla</groupId>
+    <artifactId>bibernate</artifactId>
+    <version>1.0-SNAPSHOT</version> 
+</dependency>
+<dependency>
+    <groupId>com.h2database</groupId>
+    <artifactId>h2</artifactId>
+    <version>2.1.214</version>
+</dependency>
+```
+
 ## How to use
 
 There are multiple steps you need to perform to correctly use Bibernate:
 
-1. Create `persistence.yml` [resource file](#persistenceyml-file-example) with information about your database
+1. Create `src/main/resources/persistence.yml` [resource file](#persistenceyml-file-example) with information about your
+   database.
 2. Create [entities](#entity-declaration-example), that represent table from the database.
-    * Mark them with the [`@Entity`](src/main/java/com/bobocode/bibernate/annotation/Entity.java) annotation.
-    * Add field that represents primary key of relevant table and annotated with
-      the [`@Id`](src/main/java/com/bobocode/bibernate/annotation/Id.java)
-3. Create [`Session`](src/main/java/com/bobocode/bibernate/session/Session.java)
-   object to interact with a persistence context. Look at
-   the [example](#sessionsrcmainjavacombobocodebibernatesessionsessionjava-creation-example) below
+
+* Mark them with the [`@Entity`](src/main/java/com/bobocode/bibernate/annotation/Entity.java) annotation.
+* Add field that represents primary key of relevant table and annotated with
+  the [`@Id`](src/main/java/com/bobocode/bibernate/annotation/Id.java)
+
+3. Create [`SessionFactory`](src/main/java/com/bobocode/bibernate/session/SessionFactory.java) that would represent your
+   persistence unit using [`Persistence`](src/main/java/com/bobocode/bibernate/Persistence.java) class
+4. Create [`Session`](src/main/java/com/bobocode/bibernate/session/Session.java).
+   object to interact with a persistence context
+   using [`SessionFactory`](src/main/java/com/bobocode/bibernate/session/SessionFactory.java). Look at
+   the [example](#sessionsrcmainjavacombobocodebibernatesessionsessionjava-creation-example) below.
 
 #### `persistence.yml` file example:
 
 ```yaml
+logLevel: TRACE
 persistenceUnit:
   name: h2
   dataSource:
@@ -45,16 +75,23 @@ import com.bobocode.bibernate.annotation.Id;
 import com.bobocode.bibernate.annotation.Table;
 import lombok.Data;
 
-@Data // not sure about this
+// Entity is required to be marked with @Entity
 @Entity
 public class Product {
 
+    // Entity is required to have public non-arg constructor
+    public Product() {
+    }
+
+    // Entity is required to have @Id field
     @Id
     private Long id;
 
     private String name;
 
     private Double price;
+    
+    // getters and setters are omitted for brevity
 }
 ```
 
@@ -71,10 +108,37 @@ public class SessionCreationExample {
 
     public static void main(String[] args) {
         SessionFactory sessionFactory = Persistence.createSessionFactory("default");
-
-        try (Session session = sessionFactory.createSession()) {
-            // use session here
+        Session session =  sessionFactory.createSession();
+        try {
+            session.begin();
+            Optional<T> product = session.find(Product.class, 1L);
+            product.ifPresent(p -> p.setName("new name"));
+            session.commit();
+        } catch (Exception e) {
+            session.rollback();
+            throw e;
+        } finally {
+            session.close();
         }
+    }
+}
+```
+The same construction can be simplified with convenient API to wrap your code in transaction
+```java
+import com.bobocode.bibernate.Persistence;
+import com.bobocode.bibernate.session.Session;
+import com.bobocode.bibernate.session.SessionFactory;
+
+import java.util.Optional;
+
+public class SessionCreationExample {
+
+    public static void main(String[] args) {
+        SessionFactory sessionFactory = Persistence.createSessionFactory("default");
+        QueryHelper.runWithinTx(sessionFactory, session -> {
+            Optional<T> product = session.find(Product.class, 1L);
+            product.ifPresent(p -> p.setName("new name"));
+        });
     }
 }
 ```
@@ -153,7 +217,7 @@ import com.bobocode.bibernate.annotation.Table;
 
 @Entity
 @Table(value = "products")
-public class Product {
+public class Product() {
     @Id
     private Long id;
 }
@@ -182,6 +246,8 @@ public class Product() {
 Every entity naturally has a lifecycle within the framework – it's either in a transient, persistent (or managed),
 detached or deleted state.
 
+#### What is [Session](src/main/java/com/bobocode/bibernate/session/Session.java)
+
 * **Transient entity** has neither any representation in the datastore nor in the current `Session`.
   A transient entity is simply a POJO without any identifier.
 * **Persistent entity** exist in the database, and persistent context tracks all the changes done
@@ -192,8 +258,6 @@ detached or deleted state.
   Any changes to a detached entity will not be reflected in the database, and vice-versa.
 * Removed entity is an object that was being persistent entity and now this has been passed to the session’s `remove()`
   method.
-
-### What is [Session](src/main/java/com/bobocode/bibernate/session/Session.java)
 
 [Session methods (maybe use some table: method name - description)]
 
