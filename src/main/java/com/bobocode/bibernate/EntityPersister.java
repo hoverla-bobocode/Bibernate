@@ -86,7 +86,6 @@ public class EntityPersister {
             for (int i = 0; i < valuesToInsert.size(); i++) {
                 statement.setObject(i + 1, valuesToInsert.get(i));
             }
-            System.out.println(statement);
             log.trace(statement.toString());
             statement.executeUpdate();
         } catch (SQLException e) {

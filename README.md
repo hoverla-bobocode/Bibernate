@@ -49,6 +49,8 @@ There are multiple steps you need to perform to correctly use Bibernate:
 * Mark them with the [`@Entity`](src/main/java/com/bobocode/bibernate/annotation/Entity.java) annotation.
 * Add field that represents primary key of relevant table and annotated with
   the [`@Id`](src/main/java/com/bobocode/bibernate/annotation/Id.java)
+  * (Please Note! we don't support automatic ID generation yet, so you have to manually set up ID to your entity before saving, but if you stay with
+  us and donate to us, we promise to improve and develop our product.) * 
 
 3. Create [`SessionFactory`](src/main/java/com/bobocode/bibernate/session/SessionFactory.java) that would represent your
    persistence unit using [`Persistence`](src/main/java/com/bobocode/bibernate/Persistence.java) class
@@ -93,7 +95,7 @@ public class Product {
     private String name;
 
     private Double price;
-    
+
     // getters and setters are omitted for brevity
 }
 ```
@@ -110,11 +112,12 @@ import java.util.Optional;
 public class SessionCreationExample {
 
     public static void main(String[] args) {
-        SessionFactory sessionFactory = Persistence.createSessionFactory("default"); // creates session factory from persistence.yml properties
+        SessionFactory sessionFactory = Persistence.createSessionFactory(
+                "default"); // creates session factory from persistence.yml properties
         Session session = sessionFactory.openSession(); // opens Session that corresponds to DB Connection
         try {
             session.begin(); // starts transaction
-            Optional<T> product = session.find(Product.class, 1L); // finds product by ID
+            Optional<Product> product = session.find(Product.class, 1L); // finds product by ID
             product.ifPresent(p -> p.setName("new name")); // updates product and defers update query execution
             session.commit(); // flushed all deferred actions (only 'update' in this case) and commits transaction 
         } catch (Exception e) {
@@ -139,8 +142,8 @@ public class SessionCreationExample {
     public static void main(String[] args) {
         SessionFactory sessionFactory = Persistence.createSessionFactory("default");
         // wraps the code in transaction 
-        QueryHelper.runWithinTx(sessionFactory, session -> { 
-            Optional<T> product = session.find(Product.class, 1L);
+        QueryHelper.runWithinTx(sessionFactory, session -> {
+            Optional<Product> product = session.find(Product.class, 1L);
             product.ifPresent(p -> p.setName("new name"));
         });
     }
