@@ -58,7 +58,7 @@ public class EntityPersister {
         } catch (SQLException e) {
             throw new BibernateSQLException("Error parsing data got from DB", e);
         } catch (InstantiationException | IllegalAccessException | NoSuchMethodException |
-                 InvocationTargetException e) {
+                InvocationTargetException e) {
             throw new EntityMappingException("Entity mapping error", e);
         }
     }
@@ -86,7 +86,6 @@ public class EntityPersister {
             for (int i = 0; i < valuesToInsert.size(); i++) {
                 statement.setObject(i + 1, valuesToInsert.get(i));
             }
-            System.out.println(statement);
             log.trace(statement.toString());
             statement.executeUpdate();
         } catch (SQLException e) {

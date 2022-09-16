@@ -1,3 +1,5 @@
+logLevel: INFO
+
 persistenceUnit:
   name: h2
   dataSource:
@@ -5,7 +7,6 @@ persistenceUnit:
     user: sa
     password: password
   dialect: h2
-logLevel: INFO
 ---
 persistenceUnit:
   name: unused-unit
