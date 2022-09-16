@@ -1,33 +1,21 @@
 package com.bobocode.bibernate.integration;
 
 import com.bobocode.bibernate.integration.entity.Person;
-import com.bobocode.bibernate.integration.entity.Product;
 import com.bobocode.bibernate.session.Session;
-import com.bobocode.bibernate.session.SessionFactoryImpl;
-import com.bobocode.parser.YamlPropertyParser;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class H2TransactionIntegrationTest {
+class H2TransactionIntegrationTest extends BaseH2Integration {
 
-    private Session session;
-    private SessionFactoryImpl sessionFactory;
-
+    @Override
     @BeforeEach
-    void openSession() {
-        YamlPropertyParser parser = new YamlPropertyParser();
-        sessionFactory = new SessionFactoryImpl(parser, "h2", "session-factory-test-persistence.yml");
-        session = sessionFactory.openSession();
-    }
-
-    @AfterEach
-    void tearDown() {
-        session.close();
-        sessionFactory.close();
+    void init() {
+        this.persistenceUnitName = "h2-transaction-integration-test";
+        super.init();
     }
 
     @Test
@@ -67,16 +55,21 @@ class H2TransactionIntegrationTest {
     }
 
     @Test
+    @Tag("SkipCleanup")
     @DisplayName("Entity is not updated when transaction is not committed")
     void notFinishTransaction() {
+        Session session1 = sessionFactory.openSession();
+
         session.begin();
         Person person = session.find(Person.class, 1L).orElseThrow();
         person.age(333);
         session.flush();
         session.close();
 
-        session = sessionFactory.openSession();
-        Person samePersonFromDB = session.find(Person.class, 1L).orElseThrow();
+        Person samePersonFromDB = session1.find(Person.class, 1L).orElseThrow();
         assertThat(person.age()).isNotEqualTo(samePersonFromDB.age());
+
+        session1.close();
+        sessionFactory.close();
     }
 }
