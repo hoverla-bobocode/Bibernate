@@ -6,8 +6,8 @@
 
 ## What is Bibernate?
 
-Bibernate is a Java Object-Relational Mapping (ORM) framework which can help <b>work with
-database in object-oriented manner</b>
+Bibernate is a Java Object-Relational Mapping (ORM) framework which can help you <b>work with a
+database in an object-oriented manner</b>
 
 ---
 
@@ -41,11 +41,9 @@ There are multiple steps you need to perform to correctly use Bibernate:
 1. Create `src/main/resources/persistence.yml` [resource file](#persistenceyml-file-example) with information about your
    database.
 2. Create [entities](#entity-declaration-example), that represent table from the database.
-
-* Mark them with the [`@Entity`](src/main/java/com/bobocode/bibernate/annotation/Entity.java) annotation.
-* Add field that represents primary key of relevant table and annotated with
-  the [`@Id`](src/main/java/com/bobocode/bibernate/annotation/Id.java)
-
+    * Mark them with the [`@Entity`](src/main/java/com/bobocode/bibernate/annotation/Entity.java) annotation.
+    * Add field that represents primary key of relevant table and annotated with
+      the [`@Id`](src/main/java/com/bobocode/bibernate/annotation/Id.java)
 3. Create [`SessionFactory`](src/main/java/com/bobocode/bibernate/session/SessionFactory.java) that would represent your
    persistence unit using [`Persistence`](src/main/java/com/bobocode/bibernate/Persistence.java) class
 4. Create [`Session`](src/main/java/com/bobocode/bibernate/session/Session.java).
@@ -90,7 +88,7 @@ public class Product {
     private String name;
 
     private Double price;
-    
+
     // getters and setters are omitted for brevity
 }
 ```
@@ -108,7 +106,7 @@ public class SessionCreationExample {
 
     public static void main(String[] args) {
         SessionFactory sessionFactory = Persistence.createSessionFactory("default");
-        Session session =  sessionFactory.createSession();
+        Session session = sessionFactory.createSession();
         try {
             session.begin();
             Optional<T> product = session.find(Product.class, 1L);
@@ -123,7 +121,9 @@ public class SessionCreationExample {
     }
 }
 ```
+
 The same construction can be simplified with convenient API to wrap your code in transaction
+
 ```java
 import com.bobocode.bibernate.Persistence;
 import com.bobocode.bibernate.session.Session;
@@ -155,17 +155,17 @@ Persistence API (JPA) specification, its API is based on object names of Hiberna
 ---
 ![](Major%20Classes%20Structure.png)
 
-[`Persistence`](src/main/java/com/bobocode/bibernate/Persistence.java) class contains a static
-method to obtain [`SessionFactory`](src/main/java/com/bobocode/bibernate/session/SessionFactory.java) <br>
-[`SessionFactory`](src/main/java/com/bobocode/bibernate/session/SessionFactory.java) is a
-factory for [`Session`](src/main/java/com/bobocode/bibernate/session/Session.java).
-It can create and manage multiple Session instances <br>
-[`Session`](src/main/java/com/bobocode/bibernate/session/Session.java)
-manages the persistence operations on [`Entities`](src/main/java/com/bobocode/bibernate/annotation/Entity.java) <br>
-[`Entity`](src/main/java/com/bobocode/bibernate/annotation/Entity.java) is a persistent object.
-It corresponds to records inside a database table <br>
-[`Transaction`](src/main/java/com/bobocode/bibernate/transaction/Transaction.java) maintains
-operations for each Session. It can rather perform commit or rollback operations
+* [`Persistence`](src/main/java/com/bobocode/bibernate/Persistence.java) class contains a static
+  method to obtain [`SessionFactory`](src/main/java/com/bobocode/bibernate/session/SessionFactory.java)
+* [`SessionFactory`](src/main/java/com/bobocode/bibernate/session/SessionFactory.java) is a
+  factory for [`Session`](src/main/java/com/bobocode/bibernate/session/Session.java).
+  It can create and manage multiple Session instances
+* [`Session`](src/main/java/com/bobocode/bibernate/session/Session.java)
+  manages the persistence operations on [`Entities`](src/main/java/com/bobocode/bibernate/annotation/Entity.java)
+* [`Entity`](src/main/java/com/bobocode/bibernate/annotation/Entity.java) is a persistent object.
+  It corresponds to records inside a database table
+* [`Transaction`](src/main/java/com/bobocode/bibernate/transaction/Transaction.java) maintains
+  operations for each Session. It can rather perform `commit` or `rollback` operations
 
 ### What is a persistence unit
 
@@ -194,7 +194,7 @@ persistenceUnit:
 Entity is a class that represents table in the database. Each entity instance corresponds to a row in that table.
 Entity fields or properties represent columns of the related table.
 Class is defined as entity if it's annotated with `@Entity` and has field annotated with `@Id`, which represents primary
-key.
+key. Also, an entity is required to have a public no-arg constructor and standard setters/getters
 
 You can use `@Table` annotation to specify table name. This annotation is optional. The lowercase class name is used
 as table name if annotation is omitted.
@@ -206,9 +206,21 @@ import com.bobocode.bibernate.annotation.Table;
 
 @Entity
 @Table(value = "products")
-public class Product() {
+public class Product {
+
+    public Product() {
+    }
+
     @Id
     private Long id;
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Long getId() {
+        return id;
+    }
 }
 ```
 
@@ -223,19 +235,37 @@ import com.bobocode.bibernate.annotation.Table;
 
 @Entity
 @Table(value = "products")
-public class Product() {
+public class Product {
+
+    public Product() {
+    }
+
     @Id
     private Long id;
 
     @Column(value = "name")
     private String productName;
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setProductName(String productName) {
+        this.productName = productName;
+    }
+
+    public String getProductName() {
+        return productName;
+    }
 }
 ```
 
 Every entity naturally has a lifecycle within the framework – it's either in a transient, persistent (or managed),
 detached or deleted state.
-
-#### What is [Session](src/main/java/com/bobocode/bibernate/session/Session.java)
 
 * **Transient entity** has neither any representation in the datastore nor in the current `Session`.
   A transient entity is simply a POJO without any identifier.
@@ -245,11 +275,30 @@ detached or deleted state.
   and propagating these changes to database.
 * **Detached entity** has a representation in the database, but it is not managed by the `Session`.
   Any changes to a detached entity will not be reflected in the database, and vice-versa.
-* Removed entity is an object that was being persistent entity and now this has been passed to the session’s `remove()`
-  method.
+* **Removed entity** is an object that was being persistent entity and now this has been passed to the
+  session’s `remove()` method.
 
+### What is [Session](src/main/java/com/bobocode/bibernate/session/Session.java)
+
+[`Session`](src/main/java/com/bobocode/bibernate/session/Session.java) offers create, read and delete operations for
+instances of mapped entity classes. The lifecycle of a `Session`is bounded by the beginning and end of a
+logical [`Transaction`](src/main/java/com/bobocode/bibernate/transaction/Transaction.java)
+
+Main [`Session`](src/main/java/com/bobocode/bibernate/session/Session.java) methods definition:
+
+| Method                    |                                                                     Description                                                                      |
+|---------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------:|
+| `find(class, primaryKey)` |                            find an entity by primary key<br/>the returned entity will be contained in a persistent entity                            |
+| `save(entity)`            |                            save an entity into the database <br/>the entity state is changed from transient to persistent                            |
+| `delete(entity)`          |                            remove an entity from the database <br/>the entity state is changed from persistent to removed                            |
+| `merge(entity)`           | copy the state of the given object onto the persistent object with the same identifier. <br/>the entity state is changed from detached to persistent |
+| `detach(entity)`          |                                                remove a provided entity from the persistence context                                                 |
+| `begin`                   |                                                             start a resource transaction                                                             |
+| `commit`                  |                                commit the current resource transaction, writing any unflushed changes to the database                                |
+| `rollbalck`               |                                                      roll back the current resource transaction                                                      |
 
 ## Supported Date types:
+
 | Java type     | JDBC type       |
 |---------------|-----------------|
 | LocalDate     | Date            |
