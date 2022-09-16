@@ -8,7 +8,6 @@ import com.bobocode.parser.PropertyParser;
 import com.bobocode.parser.YamlPropertyParser;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
@@ -17,15 +16,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class SessionFactoryImplTest {
 
-    private PropertyParser propertyParser = new YamlPropertyParser();
+    private final PropertyParser propertyParser = new YamlPropertyParser();
 
     private SessionFactory sessionFactory;
-
-    @BeforeEach
-    void init() {
-        YamlPropertyParser parser = new YamlPropertyParser();
-        sessionFactory = new SessionFactoryImpl(parser, "h2-integration-test");
-    }
 
     @AfterEach
     void tearDown() {

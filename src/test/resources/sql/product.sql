@@ -9,4 +9,4 @@ create table IF NOT EXISTS products
 INSERT INTO products(name, price)
 VALUES ('scissors', 1.00),
        ('rope', 10.00),
-       ('knife', 5)
+       ('knife', 5);

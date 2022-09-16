@@ -34,6 +34,10 @@ To install Bibernate locally in your project you should:
 </dependency>
 ```
 
+## Supported Databases
+* H2
+* PostgreSQL
+
 ## How to use
 
 There are multiple steps you need to perform to correctly use Bibernate:
@@ -46,8 +50,7 @@ There are multiple steps you need to perform to correctly use Bibernate:
       the [`@Id`](src/main/java/com/bobocode/bibernate/annotation/Id.java)
 3. Create [`SessionFactory`](src/main/java/com/bobocode/bibernate/session/SessionFactory.java) that would represent your
    persistence unit using [`Persistence`](src/main/java/com/bobocode/bibernate/Persistence.java) class
-4. Create [`Session`](src/main/java/com/bobocode/bibernate/session/Session.java).
-   object to interact with a persistence context
+4. Create [`Session`](src/main/java/com/bobocode/bibernate/session/Session.java object to interact with a persistence context
    using [`SessionFactory`](src/main/java/com/bobocode/bibernate/session/SessionFactory.java). Look at
    the [example](#sessionsrcmainjavacombobocodebibernatesessionsessionjava-creation-example) below.
 
@@ -56,7 +59,7 @@ There are multiple steps you need to perform to correctly use Bibernate:
 ```yaml
 logLevel: TRACE
 persistenceUnit:
-  name: h2
+  name: default
   dataSource:
     jdbcUrl: jdbc:h2:mem:testdb
     user: sa
@@ -88,7 +91,7 @@ public class Product {
     private String name;
 
     private Double price;
-
+    
     // getters and setters are omitted for brevity
 }
 ```
@@ -105,25 +108,23 @@ import java.util.Optional;
 public class SessionCreationExample {
 
     public static void main(String[] args) {
-        SessionFactory sessionFactory = Persistence.createSessionFactory("default");
-        Session session = sessionFactory.createSession();
+        SessionFactory sessionFactory = Persistence.createSessionFactory("default"); // creates session factory from persistence.yml properties
+        Session session = sessionFactory.openSession(); // opens Session that corresponds to DB Connection
         try {
-            session.begin();
-            Optional<T> product = session.find(Product.class, 1L);
-            product.ifPresent(p -> p.setName("new name"));
-            session.commit();
+            session.begin(); // starts transaction
+            Optional<T> product = session.find(Product.class, 1L); // finds product by ID
+            product.ifPresent(p -> p.setName("new name")); // updates product and defers update query execution
+            session.commit(); // flushed all deferred actions (only 'update' in this case) and commits transaction 
         } catch (Exception e) {
-            session.rollback();
+            session.rollback(); // rollbacks transaction
             throw e;
         } finally {
-            session.close();
+            session.close(); // under the hood flushes all deferred actions and closes JDBC Connection
         }
     }
 }
 ```
-
 The same construction can be simplified with convenient API to wrap your code in transaction
-
 ```java
 import com.bobocode.bibernate.Persistence;
 import com.bobocode.bibernate.session.Session;
@@ -135,7 +136,8 @@ public class SessionCreationExample {
 
     public static void main(String[] args) {
         SessionFactory sessionFactory = Persistence.createSessionFactory("default");
-        QueryHelper.runWithinTx(sessionFactory, session -> {
+        // wraps the code in transaction 
+        QueryHelper.runWithinTx(sessionFactory, session -> { 
             Optional<T> product = session.find(Product.class, 1L);
             product.ifPresent(p -> p.setName("new name"));
         });
@@ -234,16 +236,16 @@ import com.bobocode.bibernate.annotation.Id;
 import com.bobocode.bibernate.annotation.Table;
 
 @Entity
-@Table(value = "products")
+@Table("products")
 public class Product {
 
     public Product() {
     }
-
+    
     @Id
     private Long id;
 
-    @Column(value = "name")
+    @Column("name")
     private String productName;
 
     public void setId(Long id) {
@@ -275,8 +277,6 @@ detached or deleted state.
   and propagating these changes to database.
 * **Detached entity** has a representation in the database, but it is not managed by the `Session`.
   Any changes to a detached entity will not be reflected in the database, and vice-versa.
-* **Removed entity** is an object that was being persistent entity and now this has been passed to the
-  session’s `remove()` method.
 
 ### What is [Session](src/main/java/com/bobocode/bibernate/session/Session.java)
 
@@ -298,7 +298,6 @@ Main [`Session`](src/main/java/com/bobocode/bibernate/session/Session.java) meth
 | `rollbalck`               |                                                      roll back the current resource transaction                                                      |
 
 ## Supported Date types:
-
 | Java type     | JDBC type       |
 |---------------|-----------------|
 | LocalDate     | Date            |

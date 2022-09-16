@@ -37,8 +37,8 @@ public class PersistenceUnitProperties {
     private Level logLevel;
 
     /**
-     * Reads and sets properties such as: persistenceUnitName; jdbcUrl, userName and password which are base for connection to
-     * database; if dialect name is not provided then resolve it from connection metadata if logLevel is not provided then sets it
+     * Reads and sets properties such as: persistenceUnitName, jdbcUrl, userName and password which are base for connection to
+     * database; if dialect name is not provided then resolve it from connection metadata; if logLevel is not provided then sets it
      * Level.DEBUG as default
      * @param properties            map of properties
      * @throws BibernateException   if some required property is invalid
