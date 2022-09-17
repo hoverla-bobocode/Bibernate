@@ -17,7 +17,7 @@ database in an object-oriented manner</b>
 To install Bibernate locally in your project you should:
 
 * clone repo ```https://github.com/hoverla-bobocode/Bibernate.git```
-* go to the root of Bring project ```cd <path_to_bring>/Bibernate```
+* go to the root of Bibernate project ```cd <path_to_bring>/Bibernate```
 * build jar with ```mvn clean install -DskipTests```
 * add jar to your maven project:
 
@@ -53,7 +53,7 @@ There are multiple steps you need to perform to correctly use Bibernate:
   us and donate to us, we promise to improve and develop our product.) * 
 3. Create [`SessionFactory`](src/main/java/com/bobocode/bibernate/session/SessionFactory.java) that would represent your
    persistence unit using [`Persistence`](src/main/java/com/bobocode/bibernate/Persistence.java) class
-4. Create [`Session`](src/main/java/com/bobocode/bibernate/session/Session.java object to interact with a persistence context
+4. Create [`Session`](src/main/java/com/bobocode/bibernate/session/Session.java) object to interact with persistence context
    using [`SessionFactory`](src/main/java/com/bobocode/bibernate/session/SessionFactory.java). Look at
    the [example](#sessionsrcmainjavacombobocodebibernatesessionsessionjava-creation-example) below.
 
@@ -153,7 +153,7 @@ public class SessionCreationExample {
 
 ---
 Bibernate is inspired by the project called [Hibernate ORM](https://hibernate.org/) -
-object/relational mapping (ORM) framework. Although it does not implement the Java
+object/relational mapping (ORM) framework. Although, it does not implement Java
 Persistence API (JPA) specification, its API is based on object names of Hibernate.
 
 ### Major classes and interfaces structure
@@ -169,11 +169,11 @@ Persistence API (JPA) specification, its API is based on object names of Hiberna
 * [`Session`](src/main/java/com/bobocode/bibernate/session/Session.java)
   manages the persistence operations on [`Entities`](src/main/java/com/bobocode/bibernate/annotation/Entity.java)
 * [`Entity`](src/main/java/com/bobocode/bibernate/annotation/Entity.java) is a persistent object.
-  It corresponds to records inside a database table
+  It corresponds to records inside a database table.
 * [`Transaction`](src/main/java/com/bobocode/bibernate/transaction/Transaction.java) maintains
-  operations for each Session. It can rather perform `commit` or `rollback` operations
+  operations for each Session. It can rather perform `commit` or `rollback` operations.
 
-### What is a persistence unit
+### What is persistence unit
 
 ---
 A persistence unit defines a set of all `Entity` classes that are managed
@@ -270,8 +270,8 @@ public class Product {
 }
 ```
 
-Every entity naturally has a lifecycle within the framework – it's either in a transient, persistent (or managed),
-detached or deleted state.
+Every entity naturally has a lifecycle within the framework – it's either in a transient, persistent (or managed) or
+detached state.
 
 * **Transient entity** has neither any representation in the datastore nor in the current `Session`.
   A transient entity is simply a POJO without any identifier.
@@ -291,7 +291,7 @@ logical [`Transaction`](src/main/java/com/bobocode/bibernate/transaction/Transac
 Main [`Session`](src/main/java/com/bobocode/bibernate/session/Session.java) methods definition:
 
 | Method                    |                                                                     Description                                                                      |
-|---------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------:|
+|---------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
 | `find(class, primaryKey)` |                            find an entity by primary key<br/>the returned entity will be contained in a persistent entity                            |
 | `save(entity)`            |                            save an entity into the database <br/>the entity state is changed from transient to persistent                            |
 | `delete(entity)`          |                            remove an entity from the database <br/>the entity state is changed from persistent to removed                            |
